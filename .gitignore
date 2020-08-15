@@ -88,3 +88,4 @@ Qt*-linux*.tar.*
 .vs/
 
 libs/airmapd/include/boost
+libs/mavlink/include/mavlink/v2.0
