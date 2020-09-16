@@ -695,6 +695,7 @@ public:
     Q_PROPERTY(QString  gitHash                     READ gitHash                    NOTIFY gitHashChanged)
     Q_PROPERTY(quint64  vehicleUID                  READ vehicleUID                 NOTIFY vehicleUIDChanged)
     Q_PROPERTY(QString  vehicleUIDStr               READ vehicleUIDStr              NOTIFY vehicleUIDChanged)
+    Q_PROPERTY(QVariantList  losCoords               READ losCoords                  NOTIFY losCoordsChanged)
 
     /// Resets link status counters
     Q_INVOKABLE void resetCounters  ();
@@ -1046,6 +1047,7 @@ public:
 
     QString gitHash() const { return _gitHash; }
     quint64 vehicleUID() const { return _uid; }
+    QVariantList losCoords(void) const { return _losCoords; }
     QString vehicleUIDStr();
 
     bool soloFirmware() const { return _soloFirmware; }
@@ -1197,6 +1199,7 @@ signals:
     void firmwareCustomVersionChanged   ();
     void gitHashChanged                 (QString hash);
     void vehicleUIDChanged              ();
+    void losCoordsChanged               ();
 
     /// New RC channel values
     ///     @param channelCount Number of available channels, cMaxRcChannels max
@@ -1236,6 +1239,7 @@ signals:
     void isROIEnabledChanged            ();
 
 private slots:
+    void _updateLineOfSight(QList<QGeoCoordinate> coordsList);
     void _mavlinkMessageReceived        (LinkInterface* link, mavlink_message_t message);
     void _linkInactiveOrDeleted         (LinkInterface* link);
     void _sendMessageOnLink             (LinkInterface* link, mavlink_message_t message);
@@ -1367,6 +1371,7 @@ private:
     QFile               _csvLogFile;
 
     QList<LinkInterface*> _links;
+    QVariantList        _losCoords;
 
     JoystickMode_t  _joystickMode;
     bool            _joystickEnabled;

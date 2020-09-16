@@ -227,7 +227,7 @@ Vehicle::Vehicle(LinkInterface*             link,
 
     connect(_mavlink, &MAVLinkProtocol::messageReceived,        this, &Vehicle::_mavlinkMessageReceived);
     connect(_mavlink, &MAVLinkProtocol::mavlinkMessageStatus,   this, &Vehicle::_mavlinkMessageStatus);
-
+    connect(_mavlink, &MAVLinkProtocol::lineOfSightChanged,  this, &Vehicle::_updateLineOfSight);
     _addLink(link);
 
     connect(this, &Vehicle::_sendMessageOnLinkOnThread, this, &Vehicle::_sendMessageOnLink, Qt::QueuedConnection);
@@ -631,6 +631,15 @@ void Vehicle::resetCounters()
     _messagesLost       = 0;
     _messageSeq         = 0;
     _heardFrom          = false;
+}
+
+void Vehicle::_updateLineOfSight(QList<QGeoCoordinate> coordsList)
+{
+    /* Removing the old points */
+    _losCoords.clear();
+    foreach( const auto &item, coordsList )
+        _losCoords << QVariant::fromValue(item);
+    emit(losCoordsChanged());
 }
 
 void Vehicle::_mavlinkMessageReceived(LinkInterface* link, mavlink_message_t message)
@@ -2792,15 +2801,7 @@ void Vehicle::_remoteControlRSSIChanged(uint8_t rssi)
 
 void Vehicle::virtualTabletJoystickValue(double roll, double pitch, double yaw, double thrust)
 {
-    // The following if statement prevents the virtualTabletJoystick from sending values if the standard joystick is enabled
-    if ( !_joystickEnabled && !_highLatencyLink) {
-        _uas->setExternalControlSetpoint(
-            static_cast<float>(roll),
-            static_cast<float>(pitch),
-            static_cast<float>(yaw),
-            static_cast<float>(thrust),
-            0, JoystickModeRC);
-    }
+    qgcApp()->toolbox()->joystickManager()->cameraManagement()->sendGimbalCommand(roll,pitch,thrust);
 }
 
 void Vehicle::setConnectionLostEnabled(bool connectionLostEnabled)
