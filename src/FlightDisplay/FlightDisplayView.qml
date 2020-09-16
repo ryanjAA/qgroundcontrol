@@ -56,7 +56,7 @@ Item {
     property alias  _guidedController:              guidedActionsController
     property alias  _altitudeSlider:                altitudeSlider
     property real   _toolsMargin:                   ScreenTools.defaultFontPixelWidth * 0.75
-
+    property int    zoomValue : 0
     readonly property var       _dynamicCameras:        activeVehicle ? activeVehicle.dynamicCameras : null
     readonly property bool      _isCamera:              _dynamicCameras ? _dynamicCameras.cameras.count > 0 : false
     readonly property real      _defaultRoll:           0
@@ -542,12 +542,12 @@ Item {
         Loader {
             id:                         virtualJoystickMultiTouch
             z:                          _mapAndVideo.z + 5
-            width:                      parent.width  - (_flightVideoPipControl.width / 2)
+            width:                      parent.width - ScreenTools.defaultFontPixelHeight
             height:                     Math.min(mainWindow.height * 0.25, ScreenTools.defaultFontPixelWidth * 16)
             visible:                    _virtualJoystickEnabled && !QGroundControl.videoManager.fullScreen && !(activeVehicle ? activeVehicle.highLatencyLink : false)
-            anchors.bottom:             _flightVideoPipControl.top
+            anchors.bottom:             _flightVideoPipControl.bottom
             anchors.bottomMargin:       ScreenTools.defaultFontPixelHeight * 2
-            anchors.horizontalCenter:   flightDisplayViewWidgets.horizontalCenter
+            anchors.left:               flightDisplayViewWidgets.left
             source:                     "qrc:/qml/VirtualJoystick.qml"
             active:                     _virtualJoystickEnabled && !(activeVehicle ? activeVehicle.highLatencyLink : false)
 

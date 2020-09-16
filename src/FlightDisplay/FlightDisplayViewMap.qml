@@ -46,6 +46,7 @@ FlightMap {
 
     property var    _geoFenceController:        missionController.geoFenceController
     property var    _rallyPointController:      missionController.rallyPointController
+    property var    _activeVehicle:             QGroundControl.multiVehicleManager.activeVehicle
     property var    _activeVehicleCoordinate:   activeVehicle ? activeVehicle.coordinate : QtPositioning.coordinate()
     property real   _toolButtonTopMargin:       parent.height - mainWindow.height + (ScreenTools.defaultFontPixelHeight / 2)
     property bool   _airspaceEnabled:           QGroundControl.airmapSupported ? (QGroundControl.settingsManager.airMapSettings.enableAirMap.rawValue && QGroundControl.airspaceManager.connected): false
@@ -535,6 +536,14 @@ FlightMap {
                 clickMenu.coord = clickCoord
                 clickMenu.popup()
             }
+        }
+
+
+        onPressAndHold : {
+            /* In case of long press  - DO PTC */
+            var clickCoord = flightMap.toCoordinate(Qt.point(mouse.x, mouse.y),false)
+            if(_activeVehicle)
+                joystickManager.cameraManagement.pointToCoordinate(clickCoord.latitude,clickCoord.longitude)
         }
     }
 

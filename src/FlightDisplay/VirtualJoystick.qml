@@ -17,40 +17,79 @@ import QGroundControl.Palette       1.0
 import QGroundControl.Vehicle       1.0
 
 Item {
-    // The following properties must be passed in from the Loader
-    // property bool useLightColors
-    // property bool autoCenterThrottle - true: throttle will snap back to center when released
-
+    //property bool useLightColors - Must be passed in from loaded
     property var _activeVehicle: QGroundControl.multiVehicleManager.activeVehicle
+    readonly property color     _colorWhite:        "#ffffff"
 
     Timer {
-        interval:   40  // 25Hz, same as real joystick rate
-        running:    QGroundControl.settingsManager.appSettings.virtualJoystick.value && activeVehicle
+        interval:   80  // 25Hz / 2, same as real joystick rate
+        running:    QGroundControl.settingsManager.appSettings.virtualJoystick.value && _activeVehicle
         repeat:     true
         onTriggered: {
-            if (activeVehicle) {
-                activeVehicle.virtualTabletJoystickValue(rightStick.xAxis, -rightStick.yAxis, leftStick.xAxis, leftStick.yAxis)
+            if (_activeVehicle)
+                _activeVehicle.virtualTabletJoystickValue(rightStick.xAxis, rightStick.yAxis, 0, zoomValue)
+        }
+    }
+
+
+    QGCColoredImage {
+        id:                     zoomInButton
+        height:                 parent.height * 1.4
+        width:                  parent.height * 1.4
+        mipmap:                 true
+        anchors.top:                parent.top
+        anchors.topMargin:          height * -0.5
+        source:             "/qmlimages/ZoomPlus.svg"
+        fillMode:           Image.PreserveAspectFit
+        sourceSize.height:  height
+        color:              _colorWhite
+        MouseArea {
+            width: 100; height: 100
+            anchors.centerIn: parent
+            onPressedChanged: {
+                if ( pressed ) {
+                    zoomValue = 1;
+                    zoomInButton.color = "red";
+
+                } else {
+                    zoomValue = 0;
+                    zoomInButton.color = "white";
+                }
+            }
+        }
+    }
+
+    QGCColoredImage {
+        id:                     zoomOutButton
+        height:                 parent.height * 1.4
+        width:                  parent.height * 1.4
+        mipmap:                     true
+        anchors.bottom:             parent.bottom
+        anchors.bottomMargin:       height * -0.3
+        anchors.left:           parent.left
+        source:             "/qmlimages/ZoomMinus.svg"
+        fillMode:           Image.PreserveAspectFit
+        sourceSize.height:  height
+        color:              _colorWhite
+        MouseArea {
+            width: 100; height: 100
+            anchors.centerIn: parent
+            onPressedChanged: {
+                if ( pressed ) {
+                    zoomValue = 2;
+                    zoomOutButton.color = "red"
+                } else {
+                    zoomValue = 0;
+                    zoomOutButton.color = "white"
+                }
             }
         }
     }
 
     JoystickThumbPad {
-        id:                     leftStick
-        anchors.leftMargin:     xPositionDelta
-        anchors.bottomMargin:   -yPositionDelta
-        anchors.left:           parent.left
-        anchors.bottom:         parent.bottom
-        width:                  parent.height
-        height:                 parent.height
-        yAxisPositiveRangeOnly: _activeVehicle && !_activeVehicle.rover && !_activeVehicle.sub
-        yAxisReCenter:          autoCenterThrottle
-        lightColors:            useLightColors
-    }
-
-    JoystickThumbPad {
         id:                     rightStick
-        anchors.rightMargin:    -xPositionDelta
-        anchors.bottomMargin:   -yPositionDelta
+        anchors.rightMargin:    ScreenTools.defaultFontPixelHeight * 2
+        anchors.bottomMargin:   0
         anchors.right:          parent.right
         anchors.bottom:         parent.bottom
         width:                  parent.height

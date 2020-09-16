@@ -175,33 +175,51 @@ Item {
                 opacity:        _camera ? (_camera.thermalMode === QGCCameraControl.THERMAL_BLEND ? _camera.thermalOpacity / 100 : 1.0) : 0
             }
         }
-        //-- Full screen toggle
-        MouseArea {
-            anchors.fill: parent
-            onDoubleClicked: {
-                QGroundControl.videoManager.fullScreen = !QGroundControl.videoManager.fullScreen
-            }
-        }
-        //-- Zoom
+
         PinchArea {
-            id:             pinchZoom
-            enabled:        _hasZoom
-            anchors.fill:   parent
-            onPinchStarted: pinchZoom.zoom = 0
-            onPinchUpdated: {
-                if(_hasZoom) {
-                    var z = 0
-                    if(pinch.scale < 1) {
-                        z = Math.round(pinch.scale * -10)
-                    } else {
-                        z = Math.round(pinch.scale)
-                    }
-                    if(pinchZoom.zoom != z) {
-                        _camera.stepZoom(z)
-                    }
+            anchors.fill: parent
+            pinch.minimumRotation: -360
+            pinch.maximumRotation: 360
+            pinch.minimumScale: 0.1
+            pinch.maximumScale: 10
+            pinch.dragAxis: Pinch.XAndYAxis
+
+            MouseArea {
+                anchors.fill: parent
+                onDoubleClicked: {
+                    QGroundControl.videoManager.fullScreen = !QGroundControl.videoManager.fullScreen
+                }
+                onClicked: {
+                    /* Calculating the position to track on */
+                    var videoWidth
+                    var videoHeight
+                    var videoMargin
+                    var xPos = mouseX
+                    videoHeight = height
+                    videoWidth = (videoHeight * 16.0 ) / 9.0
+                    videoMargin = (width - videoWidth) / 2.0
+                    if(mouseX < (videoMargin + 16))
+                        xPos = videoMargin + 16
+                    else if(mouseX > (videoMargin + videoWidth - 16) )
+                        xPos = (videoMargin + videoWidth - 16)
+                    xPos -= videoMargin
+                    var xScaled = (1280.0 * xPos) / videoWidth
+                    var yScaled = (720.0 * mouseY) / videoHeight
+                    /* Sending the Track On Position command to the TRIP */
+                    joystickManager.cameraManagement.trackOnPosition(xScaled,yScaled);
                 }
             }
-            property int zoom: 0
+
+            onPinchUpdated: {
+                if(pinch.scale > 1)
+                    zoomValue = 1
+                else
+                    zoomValue = 2
+            }
+            onPinchFinished: {
+                zoomValue = 0
+            }
+        property int zoom: 0
         }
     }
 }
