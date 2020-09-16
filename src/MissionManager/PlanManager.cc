@@ -544,6 +544,27 @@ void PlanManager::_handleMissionRequest(const mavlink_message_t& message, bool m
     bool                forceMissionItemInt = (_vehicle->capabilityBits() & MAV_PROTOCOL_CAPABILITY_MISSION_INT) && _vehicle->apmFirmware();
     mavlink_message_t   messageOut;
     if (missionItemInt || forceMissionItemInt) {
+        if(item->command() == MAV_CMD_DO_DIGICAM_CONTROL){
+            mavlink_msg_mission_item_pack_chan(qgcApp()->toolbox()->mavlinkProtocol()->getSystemId(),
+                                               qgcApp()->toolbox()->mavlinkProtocol()->getComponentId(),
+                                               _dedicatedLink->mavlinkChannel(),
+                                               &messageOut,
+                                               _vehicle->id(),
+                                               MAV_COMP_ID_AUTOPILOT1,
+                                               missionRequestSeq,
+                                               item->frame(),
+                                               item->command(),
+                                               missionRequestSeq == 0,
+                                               item->autoContinue(),
+                                               item->param1(),
+                                               item->param2(),
+                                               item->param3(),
+                                               item->param4(),
+                                               item->param5(),
+                                               item->param6(),
+                                               item->param7(),
+                                               _planType);
+        } else {
         mavlink_msg_mission_item_int_pack_chan(qgcApp()->toolbox()->mavlinkProtocol()->getSystemId(),
                                                qgcApp()->toolbox()->mavlinkProtocol()->getComponentId(),
                                                _dedicatedLink->mavlinkChannel(),
@@ -563,6 +584,7 @@ void PlanManager::_handleMissionRequest(const mavlink_message_t& message, bool m
                                                item->param6() * qPow(10.0, 7.0),
                                                item->param7(),
                                                _planType);
+        }
     } else {
         mavlink_msg_mission_item_pack_chan(qgcApp()->toolbox()->mavlinkProtocol()->getSystemId(),
                                            qgcApp()->toolbox()->mavlinkProtocol()->getComponentId(),

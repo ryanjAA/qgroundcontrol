@@ -751,34 +751,39 @@
             "description":  "Control onboard camera.",
             "category":     "Camera",
             "param1": {
-                "label":            "Session",
+                "label":            "OS_Cmd",
                 "default":          0,
                 "decimalPlaces":    0
             },
             "param2": {
-                "label":            "Zoom",
+                "label":            "OS_Param_1",
                 "default":          0,
                 "decimalPlaces":    3
             },
             "param3": {
-                "label":            "Step",
+                "label":            "OS_Param_2",
                 "default":          0,
                 "decimalPlaces":    3
             },
             "param4": {
-                "label":            "Focus lock",
+                "label":            "OS_Param_3",
                 "default":          0,
-                "decimalPlaces":    0
+                "decimalPlaces":    3
             },
             "param5": {
-                "label":            "Command",
+                "label":            "OS_Param_4",
                 "default":          0,
-                "decimalPlaces":    0
+                "decimalPlaces":    3
             },
             "param6": {
-                "label":            "Id",
+                "label":            "OS_Param_5",
                 "default":          0,
-                "decimalPlaces":    0
+                "decimalPlaces":    3
+            },
+            "param7": {
+                "label":            "OS_Param_6",
+                "default":          0,
+                "decimalPlaces":    3
             }
         },
         {
