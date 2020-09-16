@@ -31,6 +31,7 @@ JoystickManager::JoystickManager(QGCApplication* app, QGCToolbox* toolbox)
     : QGCTool(app, toolbox)
     , _activeJoystick(nullptr)
     , _multiVehicleManager(nullptr)
+    , _cameraManagement(nullptr)
 {
 }
 
@@ -49,7 +50,20 @@ void JoystickManager::setToolbox(QGCToolbox *toolbox)
 
     _multiVehicleManager = _toolbox->multiVehicleManager();
 
+    _cameraManagement = new CameraManagement(nullptr,_multiVehicleManager,this);
+
     QQmlEngine::setObjectOwnership(this, QQmlEngine::CppOwnership);
+}
+
+CameraManagement* JoystickManager::cameraManagement()
+{
+    return _cameraManagement;
+}
+
+void JoystickManager::setCameraManagement(CameraManagement *camManagement)
+{
+    _cameraManagement = camManagement;
+    emit activeCameraManagementChanged();
 }
 
 void JoystickManager::init() {

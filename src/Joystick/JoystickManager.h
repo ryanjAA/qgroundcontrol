@@ -15,6 +15,7 @@
 #include "QGCLoggingCategory.h"
 #include "Joystick.h"
 #include "MultiVehicleManager.h"
+#include "../NvExt/NvExt_CameraManagement.h"
 #include "QGCToolbox.h"
 
 #include <QVariantList>
@@ -48,11 +49,15 @@ public:
     
     QString activeJoystickName(void);
     void setActiveJoystickName(const QString& name);
+    Q_PROPERTY(CameraManagement* cameraManagement READ cameraManagement WRITE setCameraManagement NOTIFY activeCameraManagementChanged)
 
     void restartJoystickCheckTimer(void);
 
     // Override from QGCTool
     virtual void setToolbox(QGCToolbox *toolbox);
+
+    CameraManagement* cameraManagement(void);
+    void setCameraManagement(CameraManagement *camManagement);
 
 public slots:
     void init();
@@ -62,6 +67,7 @@ signals:
     void activeJoystickNameChanged(const QString& name);
     void availableJoysticksChanged(void);
     void updateAvailableJoysticksSignal();
+    void activeCameraManagementChanged(void);
 
 private slots:
     void _updateAvailableJoysticks(void);
@@ -71,6 +77,7 @@ private:
     
 private:
     Joystick*                   _activeJoystick;
+    CameraManagement*           _cameraManagement;
     QMap<QString, Joystick*>    _name2JoystickMap;
     MultiVehicleManager*        _multiVehicleManager;
     
