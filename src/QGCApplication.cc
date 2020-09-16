@@ -131,6 +131,9 @@
 
 #include "QGCMapEngine.h"
 
+/* NextVision Version Number */
+#define NV_VERSION "v1.0.0"
+
 class FinishVideoInitialization : public QRunnable
 {
 public:
@@ -259,7 +262,7 @@ QGCApplication::QGCApplication(int &argc, char* argv[], bool unitTesting)
     setOrganizationName(QGC_ORG_NAME);
     setOrganizationDomain(QGC_ORG_DOMAIN);
 
-    this->setApplicationVersion(QString(GIT_VERSION));
+    this->setApplicationVersion(QString(NV_VERSION));
 
     // Set settings format
     QSettings::setDefaultFormat(QSettings::IniFormat);
