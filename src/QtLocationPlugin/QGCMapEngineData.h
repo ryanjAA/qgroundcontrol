@@ -122,7 +122,8 @@ public:
         taskPruneCache,
         taskReset,
         taskExport,
-        taskImport
+        taskImport,
+        taskLoadElevationTileSetsTask
     };
 
     QGCMapTask(TaskType type)
@@ -343,6 +344,18 @@ public:
 private:
     qulonglong  _setID;
     QString     _newName;
+};
+
+//-----------------------------------------------------------------------------
+class QGCLoadElevationTileSetsTask : public QGCMapTask
+{
+    Q_OBJECT
+public:
+    QGCLoadElevationTileSetsTask()
+        : QGCMapTask(QGCMapTask::taskLoadElevationTileSetsTask)
+    {}
+
+private:
 };
 
 //-----------------------------------------------------------------------------

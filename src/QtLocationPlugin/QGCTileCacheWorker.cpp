@@ -18,6 +18,7 @@
 
 #include "QGCMapEngine.h"
 #include "QGCMapTileSet.h"
+#include "../Terrain/TerrainQuery.h"
 
 #include <QVariant>
 #include <QtSql/QSqlQuery>
@@ -168,6 +169,9 @@ QGCCacheWorker::run()
                 case QGCMapTask::taskTestInternet:
                     _testInternet();
                     break;
+                case QGCMapTask::taskLoadElevationTileSetsTask:
+                    _loadElevationTileSets();
+                    break;
             }
             task->deleteLater();
             //-- Check for update timeout
@@ -292,6 +296,26 @@ QGCCacheWorker::_getTile(QGCMapTask* mtask)
     if(!found) {
         qCDebug(QGCTileCacheLog) << "_getTile() (NOT in DB) HASH:" << task->hash();
         task->setError("Tile not in cache database");
+    }
+}
+
+//-----------------------------------------------------------------------------
+void
+QGCCacheWorker::_loadElevationTileSets()
+{
+    QSqlQuery query(*_db);
+    QString s = QString("SELECT hash,tile,size FROM Tiles WHERE format = 'bin'");
+    if(query.exec(s))
+    {
+         while(query.next())
+         {
+             QString hash = query.value("hash").toString();
+             QByteArray tileByts = query.value("tile").toByteArray();
+             int tileSize = tileSize = query.value("size").toInt();
+             /* The tile size as bytes array */
+             QByteArray sizeArr((const char *)&tileSize, sizeof(tileSize));
+             emit tileLoaded(hash,tileByts);
+         }
     }
 }
 

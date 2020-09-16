@@ -63,6 +63,7 @@ public:
     static QString              storageFreeSizeToString(quint64 size_MB);
     static QString              numberToString      (quint64 number);
     static int                  concurrentDownloads (QString type);
+    QGCCacheWorker              _worker;
 
 private slots:
     void _updateTotals          (quint32 totaltiles, quint64 totalsize, quint32 defaulttiles, quint64 defaultsize);
@@ -79,7 +80,6 @@ private:
     bool _wipeDirectory         (const QString& dirPath);
 
 private:
-    QGCCacheWorker          _worker;
     QString                 _cachePath;
     QString                 _cacheFile;
     UrlFactory*             _urlFactory;

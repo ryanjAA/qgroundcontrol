@@ -28,6 +28,10 @@
 #include "QGCLoggingCategory.h"
 #include "QGCMapEngineData.h"
 #include "QGCMapUrlEngine.h"
+#include "QGCMapEngineManager.h"
+#include "QGCMapEngine.h"
+#include "QGeoMapReplyQGC.h"
+#include "QGeoTileFetcherQGC.h"
 
 Q_DECLARE_LOGGING_CATEGORY(QGCCachedTileSetLog)
 
