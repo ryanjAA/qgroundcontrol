@@ -35,7 +35,7 @@ Item {
         var xAxisTemp = stickPositionX / width
         xAxisTemp *= 2.0
         xAxisTemp -= 1.0
-        xAxis = xAxisTemp
+        xAxis = -xAxisTemp
     }
 
     function calculateYAxis() {
