@@ -271,7 +271,7 @@ QVariantList& QGCCorePlugin::instrumentPages()
 {
     if (!_p->valuesPageWidgetInfo) {
         _p->valuesPageWidgetInfo    = new QmlComponentInfo(tr("Values"),    QUrl::fromUserInput("qrc:/qml/ValuePageWidget.qml"));
-        _p->cameraPageWidgetInfo    = new QmlComponentInfo(tr("Camera"),    QUrl::fromUserInput("qrc:/qml/CameraPageWidget.qml"));
+        _p->cameraPageWidgetInfo    = new QmlComponentInfo(tr("Camera Actions"),    QUrl::fromUserInput("qrc:/qml/CameraPageWidget.qml"));
 #if defined(QGC_GST_STREAMING)
         if(!_currentCamera || !_currentCamera->autoStream()) {
             //-- Video Page Widget only available if using manual video streaming
