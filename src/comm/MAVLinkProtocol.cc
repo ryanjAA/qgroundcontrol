@@ -38,6 +38,11 @@
 #include "QGCLoggingCategory.h"
 #include "MultiVehicleManager.h"
 #include "SettingsManager.h"
+#include <NvExt/NvExt_Sys_Report.h>
+#include <NvExt/NvExt_Los_Report.h>
+#include <NvExt/NvExt_GndCrs_Report.h>
+#include "QGCQGeoCoordinate.h"
+#include "mavlink_types.h"
 
 Q_DECLARE_METATYPE(mavlink_message_t)
 
@@ -230,43 +235,47 @@ void MAVLinkProtocol::receiveBytes(LinkInterface* link, QByteArray b)
 
             //-----------------------------------------------------------------
             // MAVLink Status
-            uint8_t lastSeq = lastIndex[_message.sysid][_message.compid];
-            uint8_t expectedSeq = lastSeq + 1;
-            // Increase receive counter
+            /* ignore TRIP2/5 messages when calculating the counters */
             totalReceiveCounter[mavlinkChannel]++;
-            // Determine what the next expected sequence number is, accounting for
-            // never having seen a message for this system/component pair.
-            if(firstMessage[_message.sysid][_message.compid]) {
-                firstMessage[_message.sysid][_message.compid] = 0;
-                lastSeq     = _message.seq;
-                expectedSeq = _message.seq;
-            }
-            // And if we didn't encounter that sequence number, record the error
-            //int foo = 0;
-            if (_message.seq != expectedSeq)
+            uint64_t totalSent;
+            float receiveLossPercent;
+            if (_message.msgid != 248 )
             {
-                //foo = 1;
-                int lostMessages = 0;
-                //-- Account for overflow during packet loss
-                if(_message.seq < expectedSeq) {
-                    lostMessages = (_message.seq + 255) - expectedSeq;
-                } else {
-                    lostMessages = _message.seq - expectedSeq;
+                uint8_t lastSeq = lastIndex[_message.sysid][_message.compid];
+                uint8_t expectedSeq = lastSeq + 1;
+                // Increase receive counter
+                // Determine what the next expected sequence number is, accounting for
+                // never having seen a message for this system/component pair.
+                if(firstMessage[_message.sysid][_message.compid]) {
+                    firstMessage[_message.sysid][_message.compid] = 0;
+                    lastSeq     = _message.seq;
+                    expectedSeq = _message.seq;
                 }
-                // Log how many were lost
-                totalLossCounter[mavlinkChannel] += static_cast<uint64_t>(lostMessages);
+                // And if we didn't encounter that sequence number, record the error
+                //int foo = 0;
+                if (_message.seq != expectedSeq)
+                {
+                    //foo = 1;
+                    int lostMessages = 0;
+                    //-- Account for overflow during packet loss
+                    if(_message.seq < expectedSeq) {
+                        lostMessages = (_message.seq + 255) - expectedSeq;
+                    } else {
+                        lostMessages = _message.seq - expectedSeq;
+                    }
+                    // Log how many were lost
+                    totalLossCounter[mavlinkChannel] += static_cast<uint64_t>(lostMessages);
+                }
+
+                // And update the last sequence number for this system/component pair
+                lastIndex[_message.sysid][_message.compid] = _message.seq;;
+                // Calculate new loss ratio
+                totalSent = totalReceiveCounter[mavlinkChannel] + totalLossCounter[mavlinkChannel];
+                receiveLossPercent = static_cast<float>(static_cast<double>(totalLossCounter[mavlinkChannel]) / static_cast<double>(totalSent));
+                receiveLossPercent *= 100.0f;
+                receiveLossPercent = (receiveLossPercent * 0.5f) + (runningLossPercent[mavlinkChannel] * 0.5f);
+                runningLossPercent[mavlinkChannel] = receiveLossPercent;
             }
-
-            // And update the last sequence number for this system/component pair
-            lastIndex[_message.sysid][_message.compid] = _message.seq;;
-            // Calculate new loss ratio
-            uint64_t totalSent = totalReceiveCounter[mavlinkChannel] + totalLossCounter[mavlinkChannel];
-            float receiveLossPercent = static_cast<float>(static_cast<double>(totalLossCounter[mavlinkChannel]) / static_cast<double>(totalSent));
-            receiveLossPercent *= 100.0f;
-            receiveLossPercent = (receiveLossPercent * 0.5f) + (runningLossPercent[mavlinkChannel] * 0.5f);
-            runningLossPercent[mavlinkChannel] = receiveLossPercent;
-
-            //qDebug() << foo << _message.seq << expectedSeq << lastSeq << totalLossCounter[mavlinkChannel] << totalReceiveCounter[mavlinkChannel] << totalSentCounter[mavlinkChannel] << "(" << _message.sysid << _message.compid << ")";
 
             //-----------------------------------------------------------------
             // Log data
@@ -310,6 +319,58 @@ void MAVLinkProtocol::receiveBytes(LinkInterface* link, QByteArray b)
                 mavlink_heartbeat_t heartbeat;
                 mavlink_msg_heartbeat_decode(&_message, &heartbeat);
                 emit vehicleHeartbeatInfo(link, _message.sysid, _message.compid, heartbeat.autopilot, heartbeat.type);
+            }
+
+            /* 248 = V2_EXTENSION  message id */
+            if (_message.msgid == 248 ) {
+               /* First, take the message as GND_CRS_REPORT (the shortest one), for extracting the report_type */
+                mavlink_nvext_gnd_crs_report_t gnd_crs_report;
+                mavlink_nvext_gnd_crs_report_decode(&_message,&gnd_crs_report);
+
+                if(gnd_crs_report.report_type == MavExtReport_GndCrs)
+                {
+                    qgcApp()->toolbox()->joystickManager()->cameraManagement()->getAltAtCoord(gnd_crs_report.gnd_crossing_lat,gnd_crs_report.gnd_crossing_lon);
+                }
+                else if(gnd_crs_report.report_type == MavExtReport_LOS)
+                {
+                    float los_upper_left_corner_lat,los_upper_left_corner_lon;
+                    float los_upper_right_corner_lat,los_upper_right_corner_lon;
+                    float los_lower_right_corner_lat,los_lower_right_corner_lon;
+                    float los_lower_left_corner_lat,los_lower_left_corner_lon;
+                    uint8_t buf[64];
+                    memcpy(&buf, _MAV_PAYLOAD(&_message), _message.len);
+                    memcpy(&los_upper_left_corner_lat, &buf[14],4);
+                    memcpy(&los_upper_left_corner_lon, &buf[18],4);
+                    memcpy(&los_upper_right_corner_lat, &buf[22],4);
+                    memcpy(&los_upper_right_corner_lon, &buf[26],4);
+                    memcpy(&los_lower_right_corner_lat, &buf[30],4);
+                    memcpy(&los_lower_right_corner_lon, &buf[34],4);
+                    memcpy(&los_lower_left_corner_lat, &buf[38],4);
+                    memcpy(&los_lower_left_corner_lon, &buf[42],4);
+
+                    /* the line of sight coordinates */
+                    QList<QGeoCoordinate> coords ;
+                    if((double)los_upper_left_corner_lat < 360)
+                     coords << QGeoCoordinate((double)los_upper_left_corner_lat,(double)los_upper_left_corner_lon);
+                   if((double)los_upper_right_corner_lat < 360)
+                       coords << QGeoCoordinate((double)los_upper_right_corner_lat,(double)los_upper_right_corner_lon);
+                   if((double)los_lower_right_corner_lat != 400)
+                       coords << QGeoCoordinate((double)los_lower_right_corner_lat,(double)los_lower_right_corner_lon);
+                   if((double)los_lower_left_corner_lat != 400)
+                       coords << QGeoCoordinate((double)los_lower_left_corner_lat,(double)los_lower_left_corner_lon);
+                   /* emit for updating the vehicle that the camera line of sight was changed  */
+                   if(coords.size() == 4)
+                   {
+                       /* emit for updating the vehicle that the camera line of sight was changed  */
+                       emit lineOfSightChanged(coords);
+                   }
+                   else
+                   {
+                       /* in case of less than 4 points, report 0 points. (will be fixed in the future) */
+                       QList<QGeoCoordinate> emptyCoords ;
+                       emit lineOfSightChanged(emptyCoords);
+                   }
+                }
             }
 
             if (_message.msgid == MAVLINK_MSG_ID_HIGH_LATENCY2) {

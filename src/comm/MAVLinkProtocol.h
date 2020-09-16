@@ -23,6 +23,7 @@
 #include "QGC.h"
 #include "QGCTemporaryFile.h"
 #include "QGCToolbox.h"
+#include "QGeoCoordinate"
 
 class LinkManager;
 class MultiVehicleManager;
@@ -123,6 +124,8 @@ signals:
 
     /** @brief Message received and directly copied via signal */
     void messageReceived(LinkInterface* link, mavlink_message_t message);
+    /** emitting every time the camera line of sight updated */
+    void lineOfSightChanged(QList<QGeoCoordinate> test);
     /** @brief Emitted if version check is enabled / disabled */
     void versionCheckChanged(bool enabled);
     /** @brief Emitted if a message from the protocol should reach the user */
@@ -167,6 +170,70 @@ private:
     QGCTemporaryFile    _tempLogFile;            ///< File to log to
     static const char*  _tempLogFileTemplate;    ///< Template for temporary log file
     static const char*  _logFileExtension;       ///< Extension for log files
+
+    /* mavlink v2 ext system report struct */
+    typedef struct
+    {
+        short           report_type;
+        float           roll;
+        float           pitch;
+        float           fov;
+        char            tracker_status;
+        char            recording_status;
+        char            sensor;
+        char            polarity;
+        char            mode;
+        char            laser_status;
+        short           tracker_roi_x;
+        short           tracker_roi_y;
+        float           single_yaw_cmd;
+        char            snapshot_busy;
+        float			cpu_temp;
+        float 			camera_ver;
+        int				trip2_ver;
+        unsigned short	bit_status;
+        char			status_flags;
+        char 			camera_type;
+        float			roll_rate;
+        float			pitch_rate;
+    }MavlinkExtV2SystemReportStruct;
+
+    /* mavlink v2 ext LOS report struct */
+    typedef struct
+    {
+        short           report_type;
+        float           los_x;
+        float           los_y;
+        float           los_z;
+        float           los_upper_left_corner_lat;
+        float           los_upper_left_corner_lon;
+        float           los_upper_right_corner_lat;
+        float           los_upper_right_corner_lon;
+        float           los_lower_right_corner_lat;
+        float           los_lower_right_corner_lon;
+        float           los_lower_left_corner_lat;
+        float           los_lower_left_corner_lon;
+        float           los_elevation;
+        float           los_azimuth;
+    }MavlinkExtV2LOSReportStruct;
+
+    /* mavlink v2 ext Ground Crossing report struct */
+    typedef struct
+    {
+        short           report_type;
+        float           gnd_crossing_lat;
+        float           gnd_crossing_lon;
+        float           gnd_crossing_alt;
+        float           slant_range;
+    }MavlinkExtV2GndCrsReportStruct;
+
+    /* Mavlink Extension Arguments for report command */
+    typedef enum
+    {
+        MavExtReport_System = 0,
+        MavExtReport_LOS,
+        MavExtReport_GndCrs
+    }MavlinkExtSetReportArgs;
 
     LinkManager*            _linkMgr;
     MultiVehicleManager*    _multiVehicleManager;
