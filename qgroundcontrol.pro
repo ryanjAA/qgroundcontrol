@@ -25,7 +25,7 @@ message(Qt version $$[QT_VERSION])
 
 include(QGCCommon.pri)
 
-TARGET   = QGroundControl
+TARGET   = CCA3
 TEMPLATE = app
 QGCROOT  = $$PWD
 
@@ -61,11 +61,11 @@ WindowsBuild {
 # Branding
 #
 
-QGC_APP_NAME        = "QGroundControl"
-QGC_ORG_NAME        = "QGroundControl.org"
+QGC_APP_NAME        = "CCA3"
+QGC_ORG_NAME        = "CCA3.org"
 QGC_ORG_DOMAIN      = "org.qgroundcontrol"
-QGC_APP_DESCRIPTION = "Open source ground control app provided by QGroundControl dev team"
-QGC_APP_COPYRIGHT   = "Copyright (C) 2019 QGroundControl Development Team. All rights reserved."
+QGC_APP_DESCRIPTION = "Open source ground control app provided by CCA3 dev team"
+QGC_APP_COPYRIGHT   = "Copyright (C) 2019 CCA3 Development Team. All rights reserved."
 
 WindowsBuild {
     QGC_INSTALLER_ICON          = "WindowsQGC.ico"
@@ -351,7 +351,7 @@ CustomBuild {
         RESOURCES += $$PWD/qgcimages.qrc
     }
 } else {
-    DEFINES += QGC_APPLICATION_NAME=\"\\\"QGroundControl\\\"\"
+    DEFINES += QGC_APPLICATION_NAME=\"\\\"CCA3\\\"\"
     DEFINES += QGC_ORG_NAME=\"\\\"QGroundControl.org\\\"\"
     DEFINES += QGC_ORG_DOMAIN=\"\\\"org.qgroundcontrol\\\"\"
     RESOURCES += \
@@ -439,6 +439,10 @@ HEADERS += \
     src/api/QmlComponentInfo.h \
     src/comm/MavlinkMessagesTimer.h \
     src/GPS/Drivers/src/base_station.h \
+    src/NvExt/NvExt_CameraManagement.h \
+    src/NvExt/NvExt_Sys_Report.h \
+    src/NvExt/NvExt_Los_Report.h \
+    src/NvExt/NvExt_GndCrs_Report.h
 
 contains (DEFINES, QGC_ENABLE_PAIRING) {
     HEADERS += \
@@ -451,6 +455,7 @@ SOURCES += \
     src/api/QGCSettings.cc \
     src/api/QmlComponentInfo.cc \
     src/comm/MavlinkMessagesTimer.cc \
+    src/NvExt/NvExt_CameraManagement.cpp
 
 contains (DEFINES, QGC_ENABLE_PAIRING) {
     SOURCES += \
