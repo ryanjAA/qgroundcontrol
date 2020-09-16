@@ -29,7 +29,7 @@ Column {
     spacing:    ScreenTools.defaultFontPixelHeight * 0.25
 
     property bool   showSettingsIcon:       _camera !== null
-
+    property var    _activeVehicle:         QGroundControl.multiVehicleManager.activeVehicle
     property var    _dynamicCameras:        activeVehicle ? activeVehicle.dynamicCameras : null
     property bool   _isCamera:              _dynamicCameras ? _dynamicCameras.cameras.count > 0 : false
     property int    _curCameraIndex:        _dynamicCameras ? _dynamicCameras.currentCamera : 0
@@ -51,19 +51,197 @@ Column {
     property bool   _storageIgnored:        _camera && _camera.storageStatus === QGCCameraControl.STORAGE_NOT_SUPPORTED
     property bool   _canShoot:              !_cameraModeUndefined && ((_storageReady && _camera.storageFree > 0) || _storageIgnored)
     property bool   _isShooting:            (_cameraVideoMode && _videoRecording) || (_cameraPhotoMode && !_photoIdle)
+    readonly property int _buttonWidth:     ScreenTools.defaultFontPixelWidth * 6
+    readonly property int _buttonMargin:    ScreenTools.defaultFontPixelWidth * 0.5
+    readonly property int _rowMargin:       ScreenTools.defaultFontPixelWidth * 0.5
+    readonly property int _labelWidth:      ScreenTools.defaultFontPixelWidth * 7
 
     function showSettings() {
         mainWindow.showComponentDialog(cameraSettings, _cameraVideoMode ? qsTr("Video Settings") : qsTr("Camera Settings"), 70, StandardButton.Ok)
     }
 
     //-- Dumb camera trigger if no actual camera interface exists
-    QGCButton {
-        anchors.horizontalCenter:   parent.horizontalCenter
-        text:                       qsTr("Trigger Camera")
-        visible:                    !_camera
-        onClicked:                  activeVehicle.triggerCamera()
-        enabled:                    activeVehicle
+    // -- Nextvision Camera Actions
+    // -- Mode Row
+    Row {
+        spacing:                    _buttonMargin
+        anchors.margins:            _rowMargin
+        anchors.left:               parent.left
+
+        QGCLabel {
+            text:                       qsTr("Mode: ")
+            width:                      _labelWidth
+            font.pointSize:             ScreenTools.mediumFontPointSize
+            anchors.verticalCenter:     parent.verticalCenter
+        }
+        QGCButton {
+            text:                       qsTr("OBS")
+            visible:                    true
+            onClicked:                  joystickManager.cameraManagement.setSysModeObsCommand();
+            width:                      _buttonWidth
+            enabled:                    _activeVehicle
+        }
+        QGCButton {
+            text:                       qsTr("GRR")
+            visible:                    true
+            onClicked:                  joystickManager.cameraManagement.setSysModeGrrCommand();
+            width:                      _buttonWidth
+            enabled:                    _activeVehicle
+        }
+        QGCButton {
+            text:                       qsTr("EPR")
+            visible:                    true
+            onClicked:                  joystickManager.cameraManagement.setSysModeEprCommand();
+            width:                      _buttonWidth
+            enabled:                    _activeVehicle
+        }
     }
+
+    Row {
+        spacing:                    _buttonMargin
+        anchors.margins:            _rowMargin
+        anchors.left:               parent.left
+
+        QGCLabel {
+            text:                       qsTr("")
+            width:                      _labelWidth
+            font.pointSize:             ScreenTools.mediumFontPointSize
+            anchors.verticalCenter:     parent.verticalCenter
+        }
+        QGCButton {
+            text:                       qsTr("Hold")
+            visible:                    true
+            onClicked:                  joystickManager.cameraManagement.setSysModeHoldCommand();
+            width:                      _buttonWidth
+            enabled:                    _activeVehicle
+        }
+        QGCButton {
+            text:                       qsTr("Stow")
+            visible:                    true
+            onClicked:                  joystickManager.cameraManagement.setSysModeStowCommand();
+            width:                      _buttonWidth
+            enabled:                    _activeVehicle
+        }
+        QGCButton {
+            text:                       qsTr("Pilot")
+            visible:                    true
+            onClicked:                  joystickManager.cameraManagement.setSysModePilotCommand();
+            width:                      _buttonWidth
+            enabled:                    _activeVehicle
+        }
+    }
+
+    // -- Day/IR Row
+    Row {
+        spacing:                    _buttonMargin
+        anchors.margins:            _rowMargin
+        anchors.left:               parent.left
+
+        QGCLabel {
+            text:                       qsTr("Sensor: ")
+            width:                      _labelWidth
+            font.pointSize:             ScreenTools.mediumFontPointSize
+            anchors.verticalCenter:     parent.verticalCenter
+        }
+        QGCButton {
+            text:                       qsTr("Day")
+            visible:                    true
+            onClicked:                  joystickManager.cameraManagement.setSysSensorDayCommand();
+            width:                      _buttonWidth
+            enabled:                    _activeVehicle
+        }
+        QGCButton {
+            text:                       qsTr("IR")
+            visible:                    true
+            onClicked:                  joystickManager.cameraManagement.setSysSensorIrCommand();
+            width:                      _buttonWidth
+            enabled:                    _activeVehicle
+        }
+    }
+    // -- IR Row
+    Row {
+        spacing:                    _buttonMargin
+        anchors.margins:            _rowMargin
+        anchors.left:               parent.left
+
+        QGCLabel {
+            text:                       qsTr("IR: ")
+            width:                      _labelWidth
+            font.pointSize:             ScreenTools.mediumFontPointSize
+            anchors.verticalCenter:     parent.verticalCenter
+        }
+        QGCButton {
+            text:                       qsTr("WH/BH")
+            visible:                    true
+            onClicked:                  joystickManager.cameraManagement.setSysIrPolarityToggleCommand();
+            width:                      _buttonWidth
+            enabled:                    _activeVehicle
+        }
+        QGCButton {
+            text:                       qsTr("NUC")
+            visible:                    true
+            onClicked:                  joystickManager.cameraManagement.setSysIrNUCCommand();
+            width:                      _buttonWidth
+            enabled:                    _activeVehicle
+        }
+    }
+
+    // -- Record Row
+    Row {
+        spacing:                    _buttonMargin
+        anchors.margins:            _rowMargin
+        anchors.left:               parent.left
+
+        QGCLabel {
+            text:                       qsTr("Record: ")
+            width:                      _labelWidth
+            font.pointSize:             ScreenTools.mediumFontPointSize
+            anchors.verticalCenter:     parent.verticalCenter
+        }
+        QGCButton {
+            text:                       qsTr("En/Dis")
+            visible:                    true
+            onClicked:                  joystickManager.cameraManagement.setSysRecToggleCommand();
+            width:                      _buttonWidth
+            enabled:                    _activeVehicle
+        }
+        QGCButton {
+            text:                       qsTr("Snap")
+            visible:                    true
+            onClicked:                  joystickManager.cameraManagement.setSysSnapshotCommand();
+            width:                      _buttonWidth
+            enabled:                    _activeVehicle
+        }
+    }
+
+    // -- Retract Row
+    Row {
+        spacing:                    _buttonMargin
+        anchors.margins:            _rowMargin
+        anchors.left:               parent.left
+
+        QGCLabel {
+            text:                       qsTr("Retract: ")
+            width:                      _labelWidth
+            font.pointSize:             ScreenTools.mediumFontPointSize
+            anchors.verticalCenter:     parent.verticalCenter
+        }
+        QGCButton {
+            text:                       qsTr("Retract")
+            visible:                    true
+            onClicked:                  joystickManager.cameraManagement.setSysModeRetractCommand();
+            width:                      _buttonWidth
+            enabled:                    _activeVehicle
+        }
+        QGCButton {
+            text:                       qsTr("Unlock")
+            visible:                    true
+            onClicked:                  joystickManager.cameraManagement.setSysModeRetractUnlockCommand();
+            width:                      _buttonWidth
+            enabled:                    _activeVehicle
+        }
+    }
+
     Item { width: 1; height: ScreenTools.defaultFontPixelHeight; visible: _camera; }
     //-- Actual controller
     QGCLabel {
