@@ -32,6 +32,7 @@ Item {
     property var    _breachReturnPointComponent
     property var    _breachReturnDragComponent
     property var    _paramCircleFenceComponent
+    property var    _paramLosPolygon
     property var    _polygons:                  myGeoFenceController.polygons
     property var    _circles:                   myGeoFenceController.circles
     property color  _borderColor:               "orange"
@@ -41,6 +42,7 @@ Item {
     property color  _interiorColorInclusion:    "transparent"
     property real   _interiorOpacityExclusion:  0.2
     property real   _interiorOpacityInclusion:  1
+    property var    _losCoords:                 QGroundControl.multiVehicleManager.activeVehicle.losCoords
 
     function addPolygon(inclusionPolygon) {
         // Initial polygon is inset to take 2/3rds space
@@ -80,13 +82,16 @@ Item {
         map.addMapItem(_breachReturnPointComponent)
         _breachReturnDragComponent = breachReturnDragComponent.createObject(map, { "itemIndicator": _breachReturnPointComponent })
         _paramCircleFenceComponent = paramCircleFenceComponent.createObject(map)
+        _paramLosPolygon = paramLosPolygon.createObject(map)
         map.addMapItem(_paramCircleFenceComponent)
+        map.addMapItem(_paramLosPolygon)
     }
 
     Component.onDestruction: {
         _breachReturnPointComponent.destroy()
         _breachReturnDragComponent.destroy()
         _paramCircleFenceComponent.destroy()
+        _paramLosPolygon.destroy()
     }
 
     // By default the parent for Instantiator.delegate item is the Instatiator itself. By there is a bug
@@ -137,6 +142,19 @@ Item {
             property real _radius: myGeoFenceController.paramCircularFence
 
             on_RadiusChanged: console.log("_radius", _radius, homePosition.isValid, homePosition)
+        }
+    }
+
+    Component {
+        id: paramLosPolygon
+
+        MapPolygon {
+            color:          "blue"
+            opacity:        0.5
+            border.color:   "green"
+            border.width:   5
+            visible:        true
+            path:           _losCoords
         }
     }
 
