@@ -16,8 +16,11 @@
 #include "VideoManager.h"
 #include "QGCCameraManager.h"
 #include "QGCCameraControl.h"
+#include "SettingsManager.h"
 
 #include <QSettings>
+
+#define NV_HAT_INC 983.0f
 
 QGC_LOGGING_CATEGORY(JoystickLog,       "JoystickLog")
 QGC_LOGGING_CATEGORY(JoystickValuesLog, "JoystickValuesLog")
@@ -77,6 +80,29 @@ const char* Joystick::_rgFunctionSettingsKey[Joystick::maxFunction] = {
 
 int Joystick::_transmitterMode = 2;
 
+
+/* NextVision Added configuration keys for Camera Joystick
+* ------------------------------------------------------------------------------------------------------*/
+const char* Joystick::_buttonCamActionNameKey =         "ButtonCamActionName%1";
+const char* Joystick::_buttonCamActionRepeatKey =       "ButtonCamActionRepeat%1";
+const char* Joystick::_camPitchRollAxleKey =            "CameraPitchRollAxle";
+
+const char* Joystick::_buttonActionZoomIn =             QT_TR_NOOP("Zoom In");
+const char* Joystick::_buttonActionZoomOut =            QT_TR_NOOP("Zoom Out");
+const char* Joystick::_buttonActionDayIR =              QT_TR_NOOP("Day / IR");
+const char* Joystick::_buttonActionWHBH =               QT_TR_NOOP("White Hot / Black Hot");
+const char* Joystick::_buttonActionNUC =                QT_TR_NOOP("NUC");
+const char* Joystick::_buttonActionSnap =               QT_TR_NOOP("Image Capture");
+const char* Joystick::_buttonActionRec =                QT_TR_NOOP("Record");
+const char* Joystick::_buttonActionSY =                 QT_TR_NOOP("Single Yaw");
+const char* Joystick::_buttonActionOBS =                QT_TR_NOOP("Observation");
+const char* Joystick::_buttonActionGRR =                QT_TR_NOOP("GRR");
+const char* Joystick::_buttonActionStow =               QT_TR_NOOP("Stow");
+const char* Joystick::_buttonActionPilot =              QT_TR_NOOP("Pilot");
+const char* Joystick::_buttonActionRetract =            QT_TR_NOOP("Retract");
+const char* Joystick::_buttonActionHoldCord =           QT_TR_NOOP("Hold Coordinate");
+/* ------------------------------------------------------------------------------------------------------*/
+
 const float Joystick::_defaultAxisFrequencyHz   = 25.0f;
 const float Joystick::_defaultButtonFrequencyHz = 5.0f;
 const float Joystick::_minAxisFrequencyHz       = 0.25f;
@@ -98,7 +124,11 @@ AssignableButtonAction::AssignableButtonAction(QObject* parent, QString action_,
 }
 
 Joystick::Joystick(const QString& name, int axisCount, int buttonCount, int hatCount, MultiVehicleManager* multiVehicleManager)
-    : _name(name)
+    : _is_cam_joystick(false)
+    , _is_same_joystick(false)
+    , _camPitchRollAxle(0)
+    , _camTimeDivider(0)
+    , _name(name)
     , _axisCount(axisCount)
     , _buttonCount(buttonCount)
     , _hatCount(hatCount)
@@ -116,6 +146,21 @@ Joystick::Joystick(const QString& name, int axisCount, int buttonCount, int hatC
         _rgButtonValues[i] = BUTTON_UP;
         _buttonActionArray.append(nullptr);
     }
+
+    /* NextVision Added Code For Camera Joystick
+     ------------------------------------------------------------------------------------------------------*/
+    for (int i = 0; i < _totalButtonCount; i++) {
+        _buttonCamActionArray.append(nullptr);
+    }
+    _buildCamActionList();
+
+    _camJoystickDZ = qgcApp()->toolbox()->settingsManager()->appSettings()->camJoystickDZ()->rawValue().toInt();
+    _camJoystickGain = qgcApp()->toolbox()->settingsManager()->appSettings()->camJoystickGain()->rawValue().toInt();
+    _camJoystickRollInvert = qgcApp()->toolbox()->settingsManager()->appSettings()->camJoystickRollInvert()->rawValue().toBool();
+    _camJoystickPitchInvert = qgcApp()->toolbox()->settingsManager()->appSettings()->camJoystickPitchInvert()->rawValue().toBool();
+
+    /* ------------------------------------------------------------------------------------------------------*/
+
     _buildActionList(_multiVehicleManager->activeVehicle());
     _updateTXModeSettingsKey(_multiVehicleManager->activeVehicle());
     _loadSettings();
@@ -139,10 +184,18 @@ Joystick::~Joystick()
     delete[] _rgCalibration;
     delete[] _rgButtonValues;
     _assignableButtonActions.clearAndDeleteContents();
+    _assignableCamButtonActions.clearAndDeleteContents();       /* NextVision */
     for (int button = 0; button < _totalButtonCount; button++) {
         if(_buttonActionArray[button]) {
             _buttonActionArray[button]->deleteLater();
         }
+
+        /* NextVision Added Code For Camera Joystick
+         ------------------------------------------------------------------------------------------------------*/
+        if(_buttonCamActionArray[button]) {
+            _buttonCamActionArray[button]->deleteLater();
+        }
+        /* ------------------------------------------------------------------------------------------------------*/
     }
 }
 
@@ -308,6 +361,26 @@ void Joystick::_loadSettings()
         }
     }
 
+    /* NextVision Added Code For Camera Joystick */
+    /* ------------------------------------------------------------------------------------------------------*/
+    for (int button = 0; button < _totalButtonCount; button++) {
+        QString a = settings.value(QString(_buttonCamActionNameKey).arg(button), QString()).toString();
+        if(!a.isEmpty() && a != _buttonActionNone) {
+            if(_buttonCamActionArray[button]) {
+                _buttonCamActionArray[button]->deleteLater();
+            }
+            AssignedButtonAction* ap = new AssignedButtonAction(this, a);
+            ap->repeat = false;
+            _buttonCamActionArray[button] = ap;
+            _buttonCamActionArray[button]->buttonTime.start();
+            qCDebug(JoystickLog) << "_loadSettings Cam button:action" << button << _buttonCamActionArray[button]->action << _buttonCamActionArray[button]->repeat;
+        }
+    }
+
+    /* read the current camera PitchRoll Axle value */
+    _camPitchRollAxle     = settings.value(_camPitchRollAxleKey, 0).toInt();
+    /* ------------------------------------------------------------------------------------------------------*/
+
     if (badSettings) {
         _calibrated = false;
         settings.setValue(_calibratedSettingsKey, false);
@@ -325,6 +398,13 @@ void Joystick::_saveButtonSettings()
             settings.setValue(QString(_buttonActionRepeatKey).arg(button),      _buttonActionArray[button]->repeat);
             qCDebug(JoystickLog) << "_saveButtonSettings button:action" << button <<  _buttonActionArray[button]->action << _buttonActionArray[button]->repeat;
         }
+        /* NextVision Added Code For Camera Joystick */
+        /* ------------------------------------------------------------------------------------------------------*/
+        if(_buttonCamActionArray[button]) {
+            settings.setValue(QString(_buttonCamActionNameKey).arg(button),        _buttonCamActionArray[button]->action);
+            settings.setValue(QString(_buttonCamActionRepeatKey).arg(button),      false);
+        }
+        /* ------------------------------------------------------------------------------------------------------*/
     }
 }
 
@@ -348,6 +428,7 @@ void Joystick::_saveSettings()
     settings.setValue(_throttleModeSettingsKey,     _throttleMode);
     settings.setValue(_negativeThrustSettingsKey,   _negativeThrust);
     settings.setValue(_circleCorrectionSettingsKey, _circleCorrection);
+    settings.setValue(_camPitchRollAxleKey,         _camPitchRollAxle);         /* NextVision */
 
     qCDebug(JoystickLog) << "_saveSettings calibrated:throttlemode:deadband:txmode" << _calibrated << _throttleMode << _deadband << _circleCorrection << _transmitterMode;
 
@@ -471,13 +552,20 @@ float Joystick::_adjustRange(int value, Calibration_t calibration, bool withDead
     return std::max(-1.0f, std::min(correctedValue, 1.0f));
 }
 
-
+/* NextVision Added Code For Camera Joystick
+ ------------------------------------------------------------------------------------------------------*/
 void Joystick::run()
 {
+    float roll_yaw = 0, pitch = 0;
+    Calibration_t   roll_caib;
+    Calibration_t   pitch_caib;
+    float roll_yaw_DZ = 0, pitch_DZ = 0;
+
     //-- Joystick thread
     _open();
     //-- Reset timers
     _axisTime.start();
+    _camTimeDivider = 0;
     for (int buttonIndex = 0; buttonIndex < _totalButtonCount; buttonIndex++) {
         if(_buttonActionArray[buttonIndex]) {
             _buttonActionArray[buttonIndex]->buttonTime.start();
@@ -485,12 +573,255 @@ void Joystick::run()
     }
     while (!_exitThread) {
         _update();
-        _handleButtons();
-        _handleAxis();
-        QGC::SLEEP::msleep(qMin(static_cast<int>(1000.0f / _maxAxisFrequencyHz), static_cast<int>(1000.0f / _maxButtonFrequencyHz)) / 2);
+        if ( _is_same_joystick )
+        {
+            _handleButtons();
+            _handleAxis();
+
+            if ( _activeVehicle->joystickCamEnabled() )
+            {
+                if( _camTimeDivider++ >= 3 )
+                {
+
+                    switch ( _camPitchRollAxle )
+                    {
+                        case 0:
+                        {
+                            _handleCamHat(&roll_yaw,&pitch);
+                            roll_caib.max = 32768;
+                            roll_caib.min = -32768;
+                            pitch_caib.max = 32768;
+                            pitch_caib.min = -32768;
+                        }
+                        break;
+
+                        case 1:
+                        {
+                            roll_yaw = _getAxis(0);
+                            pitch = _getAxis(1);
+                            /* apply inversion */
+                            if(_camJoystickRollInvert)
+                                roll_yaw *= -1;
+                            if(_camJoystickPitchInvert)
+                                pitch *= -1;
+                            roll_caib = getCalibration(0);
+                            pitch_caib = getCalibration(1);
+                        }
+                        break;
+
+                        case 2:
+                        {
+                            roll_yaw = _getAxis(2);
+                            pitch = _getAxis(3);
+                            /* apply inversion */
+                            if(_camJoystickRollInvert)
+                                roll_yaw *= -1;
+                            if(_camJoystickPitchInvert)
+                                pitch *= -1;
+                            roll_caib = getCalibration(2);
+                            pitch_caib = getCalibration(3);
+                        }
+                        break;
+
+                        default:
+                            QGC::SLEEP::msleep(20);
+                        continue;
+                    }                    
+
+                    _camTimeDivider = 0;
+
+                    if ( _camPitchRollAxle != 0 )
+                    {
+                        /* calculate the Dead Zone */
+                        roll_yaw_DZ  = (_camJoystickDZ * roll_caib.max) / 100;
+                        pitch_DZ  = (_camJoystickDZ * pitch_caib.max) / 100;
+
+                        /* check deadzone - roll */
+                        if ( roll_yaw > -roll_yaw_DZ && roll_yaw < roll_yaw_DZ )
+                            roll_yaw = 0;
+
+                        /* check deadzone - pitch */
+                        if ( pitch > -pitch_DZ && pitch < pitch_DZ )
+                            pitch = 0;
+                    }
+
+                    /* Apply Gain */
+                    roll_yaw *= ((float)_camJoystickGain / (float)100.0);
+                    pitch *= ((float)_camJoystickGain / (float)100.0);
+
+                    /* Apply limiting */
+                    if ( roll_yaw > roll_caib.max )
+                        roll_yaw = roll_caib.max;
+                    if ( roll_yaw < roll_caib.min )
+                        roll_yaw = roll_caib.min;
+                    if ( pitch > pitch_caib.max )
+                        pitch = pitch_caib.max;
+                    if ( pitch < pitch_caib.min )
+                        pitch = pitch_caib.min;
+
+                    emit manualControlCam(roll_yaw,pitch,_rgButtonValues);
+                    emit manualControlCamQml(roll_yaw,pitch);
+                }
+            }
+        }
+        else if ( !_is_cam_joystick )
+        {
+            _handleButtons();
+            _handleAxis();
+        }
+        else if ( _is_cam_joystick )
+        {
+            if ( _activeVehicle->joystickCamEnabled() )
+            {
+                if( _camTimeDivider++ >= 3 )
+                {
+                    //-- Update axis
+                    for (int axisIndex = 0; axisIndex < _axisCount; axisIndex++) {
+                        int newAxisValue = _getAxis(axisIndex);
+                        // Calibration code requires signal to be emitted even if value hasn't changed
+                        _rgAxisValues[axisIndex] = newAxisValue;
+                        //   qDebug() << "newAxisValue[" << axisIndex <<"] = " << newAxisValue;
+                    }
+
+                    //-- Update button states
+                    for (int buttonIndex = 0; buttonIndex < _buttonCount; buttonIndex++) {
+                        bool newButtonValue = _getButton(buttonIndex);
+                        if (newButtonValue && _rgButtonValues[buttonIndex] == BUTTON_UP)
+                            _rgButtonValues[buttonIndex] = BUTTON_DOWN;
+                        else if (!newButtonValue && _rgButtonValues[buttonIndex] != BUTTON_UP)
+                            _rgButtonValues[buttonIndex] = BUTTON_UP;
+                    }
+                    //-- Update hat - append hat buttons to the end of the normal button list
+                    for (int hatButtonIndex = 0; hatButtonIndex < 4; hatButtonIndex++) {
+                        int rgButtonValueIndex = hatButtonIndex + _buttonCount;
+                        bool newButtonValue = _getHat(0, hatButtonIndex);
+                        if (newButtonValue && _rgButtonValues[rgButtonValueIndex] == BUTTON_UP)
+                            _rgButtonValues[rgButtonValueIndex] = BUTTON_DOWN;
+                         else if (!newButtonValue && _rgButtonValues[rgButtonValueIndex] != BUTTON_UP)
+                            _rgButtonValues[rgButtonValueIndex] = BUTTON_UP;
+                    }
+
+                    switch ( _camPitchRollAxle )
+                    {
+                        case 0:
+                        {
+                            _handleCamHat(&roll_yaw,&pitch);
+                            roll_caib.max = 32768;
+                            roll_caib.min = -32768;
+                            pitch_caib.max = 32768;
+                            pitch_caib.min = -32768;
+                        }
+                        break;
+
+                        case 1:
+                        {
+                            roll_yaw = _getAxis(0);
+                            pitch = _getAxis(1);
+                            /* apply inversion */
+                            if(_camJoystickRollInvert)
+                                roll_yaw *= -1;
+                            if(_camJoystickPitchInvert)
+                                pitch *= -1;
+                            roll_caib = getCalibration(0);
+                            pitch_caib = getCalibration(1);
+                        }
+                        break;
+
+                        case 2:
+                        {
+                            roll_yaw = _getAxis(2);
+                            pitch = _getAxis(3);
+                            /* apply inversion */
+                            if(_camJoystickRollInvert)
+                                roll_yaw *= -1;
+                            if(_camJoystickPitchInvert)
+                                pitch *= -1;
+                            roll_caib = getCalibration(2);
+                            pitch_caib = getCalibration(3);
+                        }
+                        break;
+
+                        default:
+                            QGC::SLEEP::msleep(20);
+                        continue;
+                    }
+
+                    _camTimeDivider = 0;
+
+                    if ( _camPitchRollAxle != 0 )
+                    {
+                        /* calculate the Dead Zone */
+                        roll_yaw_DZ  = (_camJoystickDZ * roll_caib.max) / 100;
+                        pitch_DZ  = (_camJoystickDZ * pitch_caib.max) / 100;
+
+                        /* check deadzone - roll */
+                        if ( roll_yaw > -roll_yaw_DZ && roll_yaw < roll_yaw_DZ )
+                            roll_yaw = 0;
+
+                        /* check deadzone - pitch */
+                        if ( pitch > -pitch_DZ && pitch < pitch_DZ )
+                            pitch = 0;
+                    }
+
+                    /* Apply Gain */
+                    roll_yaw *= ((float)_camJoystickGain / (float)100.0);
+                    pitch *= ((float)_camJoystickGain / (float)100.0);
+
+                    /* Apply limiting */
+                    if ( roll_yaw > roll_caib.max )
+                        roll_yaw = roll_caib.max;
+                    if ( roll_yaw < roll_caib.min )
+                        roll_yaw = roll_caib.min;
+                    if ( pitch > pitch_caib.max )
+                        pitch = pitch_caib.max;
+                    if ( pitch < pitch_caib.min )
+                        pitch = pitch_caib.min;
+
+                    emit manualControlCam(roll_yaw,pitch,_rgButtonValues);
+                    emit manualControlCamQml(roll_yaw,pitch);
+                }
+            }
+        }
+    QGC::SLEEP::msleep(20);
     }
     _close();
 }
+/* NextVision Added Code For Camera Joystick
+ ------------------------------------------------------------------------------------------------------*/
+void Joystick::_handleCamHat(float *roll_yaw, float *pitch)
+{
+    bool up = _getHat(0, 0);
+    bool down = _getHat(0, 1);
+    bool left = _getHat(0, 2);
+    bool right = _getHat(0, 3);
+
+    /* calculate the Axle value */
+    if ( up )
+        *pitch -= NV_HAT_INC;
+    else if ( down )
+        *pitch += NV_HAT_INC;
+    else
+        *pitch = 0;
+
+    if ( left )
+        *roll_yaw -= NV_HAT_INC;
+    else if ( right )
+        *roll_yaw += NV_HAT_INC;
+    else
+        *roll_yaw = 0;
+
+    /* rol_yaw / pitch limiting */
+    if ( *roll_yaw > 32768 )
+        *roll_yaw = 32768;
+    else if ( *roll_yaw < -32768 )
+        *roll_yaw = -32768;
+
+    if ( *pitch > 32768 )
+        *pitch = 32768;
+    else if ( *pitch < -32768 )
+        *pitch = -32768;
+}
+/*------------------------------------------------------------------------------------------------------*/
 
 void Joystick::_handleButtons()
 {
@@ -676,7 +1007,8 @@ void Joystick::_handleAxis()
                     buttonPressedBits |= buttonBit;
                 }
             }
-            emit axisValues(roll, pitch, yaw, throttle);
+
+            emit axisValues(roll,pitch,yaw,throttle);
 
             uint16_t shortButtons = static_cast<uint16_t>(buttonPressedBits & 0xFFFF);
             _activeVehicle->sendJoystickDataThreadSafe(roll, pitch, yaw, throttle, shortButtons);
@@ -686,39 +1018,47 @@ void Joystick::_handleAxis()
 
 void Joystick::startPolling(Vehicle* vehicle)
 {
-    if (vehicle) {
-        // If a vehicle is connected, disconnect it
-        if (_activeVehicle) {
-            disconnect(this, &Joystick::setArmed,           _activeVehicle, &Vehicle::setArmedShowError);
-            disconnect(this, &Joystick::setVtolInFwdFlight, _activeVehicle, &Vehicle::setVtolInFwdFlight);
-            disconnect(this, &Joystick::setFlightMode,      _activeVehicle, &Vehicle::setFlightMode);
-            disconnect(this, &Joystick::gimbalPitchStep,    _activeVehicle, &Vehicle::gimbalPitchStep);
-            disconnect(this, &Joystick::gimbalYawStep,      _activeVehicle, &Vehicle::gimbalYawStep);
-            disconnect(this, &Joystick::centerGimbal,       _activeVehicle, &Vehicle::centerGimbal);
-            disconnect(this, &Joystick::gimbalControlValue, _activeVehicle, &Vehicle::gimbalControlValue);
-            disconnect(this, &Joystick::emergencyStop,      _activeVehicle, &Vehicle::emergencyStop);
+    if (vehicle) {              /* NextVision */
+        if ( _is_same_joystick || !_is_cam_joystick) {
+            // If a vehicle is connected, disconnect it
+            if (_activeVehicle ) {
+                disconnect(this, &Joystick::setArmed,           _activeVehicle, &Vehicle::setArmedShowError);
+                disconnect(this, &Joystick::setVtolInFwdFlight, _activeVehicle, &Vehicle::setVtolInFwdFlight);
+                disconnect(this, &Joystick::setFlightMode,      _activeVehicle, &Vehicle::setFlightMode);
+                disconnect(this, &Joystick::gimbalPitchStep,    _activeVehicle, &Vehicle::gimbalPitchStep);
+                disconnect(this, &Joystick::gimbalYawStep,      _activeVehicle, &Vehicle::gimbalYawStep);
+                disconnect(this, &Joystick::centerGimbal,       _activeVehicle, &Vehicle::centerGimbal);
+                disconnect(this, &Joystick::gimbalControlValue, _activeVehicle, &Vehicle::gimbalControlValue);
+            }
+            // Always set up the new vehicle
+            _activeVehicle = vehicle;
+            // If joystick is not calibrated, disable it
+            if ( !_calibrated ) {
+                vehicle->setJoystickEnabled(false);
+            }
+            // Update qml in case of joystick transition
+            emit calibratedChanged(_calibrated);
+
+            // Build action list
+            _buildActionList(vehicle);
+            _buildCamActionList();
+            // Only connect the new vehicle if it wants joystick data
+            if (vehicle->joystickEnabled() ) {
+                _pollingStartedForCalibration = false;
+                connect(this, &Joystick::setArmed,           _activeVehicle, &Vehicle::setArmedShowError);
+                connect(this, &Joystick::setVtolInFwdFlight, _activeVehicle, &Vehicle::setVtolInFwdFlight);
+                connect(this, &Joystick::setFlightMode,      _activeVehicle, &Vehicle::setFlightMode);
+                connect(this, &Joystick::gimbalPitchStep,    _activeVehicle, &Vehicle::gimbalPitchStep);
+                connect(this, &Joystick::gimbalYawStep,      _activeVehicle, &Vehicle::gimbalYawStep);
+                connect(this, &Joystick::centerGimbal,       _activeVehicle, &Vehicle::centerGimbal);
+                connect(this, &Joystick::gimbalControlValue, _activeVehicle, &Vehicle::gimbalControlValue);
+                // FIXME: ****
+                //connect(this, &Joystick::buttonActionTriggered, uas, &UAS::triggerAction);
+            }
         }
-        // Always set up the new vehicle
-        _activeVehicle = vehicle;
-        // If joystick is not calibrated, disable it
-        if ( !_calibrated ) {
-            vehicle->setJoystickEnabled(false);
-        }
-        // Update qml in case of joystick transition
-        emit calibratedChanged(_calibrated);
-        // Build action list
-        _buildActionList(vehicle);
-        // Only connect the new vehicle if it wants joystick data
-        if (vehicle->joystickEnabled()) {
-            _pollingStartedForCalibration = false;
-            connect(this, &Joystick::setArmed,           _activeVehicle, &Vehicle::setArmedShowError);
-            connect(this, &Joystick::setVtolInFwdFlight, _activeVehicle, &Vehicle::setVtolInFwdFlight);
-            connect(this, &Joystick::setFlightMode,      _activeVehicle, &Vehicle::setFlightMode);
-            connect(this, &Joystick::gimbalPitchStep,    _activeVehicle, &Vehicle::gimbalPitchStep);
-            connect(this, &Joystick::gimbalYawStep,      _activeVehicle, &Vehicle::gimbalYawStep);
-            connect(this, &Joystick::centerGimbal,       _activeVehicle, &Vehicle::centerGimbal);
-            connect(this, &Joystick::gimbalControlValue, _activeVehicle, &Vehicle::gimbalControlValue);
-            connect(this, &Joystick::emergencyStop,      _activeVehicle, &Vehicle::emergencyStop);
+        else if ( _is_cam_joystick )
+        {
+            _buildCamActionList();
         }
     }
     if (!isRunning()) {
@@ -729,8 +1069,8 @@ void Joystick::startPolling(Vehicle* vehicle)
 
 void Joystick::stopPolling(void)
 {
-    if (isRunning()) {
-        if (_activeVehicle && _activeVehicle->joystickEnabled()) {
+    if (isRunning()) {      /* NextVision */
+        if (_activeVehicle && _activeVehicle->joystickEnabled() && ( _is_same_joystick || !_is_cam_joystick)) {
             disconnect(this, &Joystick::setArmed,           _activeVehicle, &Vehicle::setArmedShowError);
             disconnect(this, &Joystick::setVtolInFwdFlight, _activeVehicle, &Vehicle::setVtolInFwdFlight);
             disconnect(this, &Joystick::setFlightMode,      _activeVehicle, &Vehicle::setFlightMode);
@@ -859,6 +1199,116 @@ QStringList Joystick::buttonActions()
     }
     return list;
 }
+
+/* NextVision Added Code For Camera Joystick */
+/* ------------------------------------------------------------------------------------------------------*/
+void Joystick::setButtonCamAction(int button, const QString& action)
+{
+    if (!_validButton(button)) {
+        return;
+    }
+    qCWarning(JoystickLog) << "setButtonCamAction:" << button << action;
+    QSettings settings;
+    settings.beginGroup(_settingsGroup);
+    settings.beginGroup(_name);
+    if(action.isEmpty() || action == _buttonActionNone) {
+        if(_buttonCamActionArray[button]) {
+            _buttonCamActionArray[button]->deleteLater();
+            _buttonCamActionArray[button] = nullptr;
+            //-- Clear from settings
+            settings.remove(QString(_buttonCamActionNameKey).arg(button));
+            settings.remove(QString(_buttonCamActionRepeatKey).arg(button));
+        }
+    } else {
+        if(!_buttonCamActionArray[button]) {
+            _buttonCamActionArray[button] = new AssignedButtonAction(this, action);
+        } else {
+            _buttonCamActionArray[button]->action = action;
+            _buttonCamActionArray[button]->repeat = false;
+        }
+        //-- Save to settings
+        settings.setValue(QString(_buttonCamActionNameKey).arg(button),   _buttonCamActionArray[button]->action);
+        settings.setValue(QString(_buttonCamActionRepeatKey).arg(button), false);
+    }
+    emit buttonCamActionsChanged();
+}
+
+QString Joystick::getButtonCamAction(int button)
+{
+    if (_validButton(button)) {
+        if(_buttonCamActionArray[button]) {
+            return _buttonCamActionArray[button]->action;
+        }
+    }
+    return QString(_buttonActionNone);
+}
+
+QStringList Joystick::buttonCamActions()
+{
+    QStringList list;
+    for (int button = 0; button < _totalButtonCount; button++) {
+        list << getButtonCamAction(button);
+    }
+    return list;
+}
+
+void Joystick::setCamPitchRollAxle(int axle)
+{
+    _camPitchRollAxle = axle;
+    _saveSettings();
+    emit camPitchRollAxleChanged();
+}
+
+void Joystick::_buildCamActionList()
+{
+    if(_assignableCamButtonActions.count())
+        _assignableCamButtonActions.clearAndDeleteContents();
+    _availableCamActionTitles.clear();
+
+    //-- Available Camera Actions
+    _assignableCamButtonActions.append(new AssignableButtonAction(this, _buttonActionNone));
+    _assignableCamButtonActions.append(new AssignableButtonAction(this, _buttonActionZoomIn));
+    _assignableCamButtonActions.append(new AssignableButtonAction(this, _buttonActionZoomOut));
+    _assignableCamButtonActions.append(new AssignableButtonAction(this, _buttonActionDayIR));
+    _assignableCamButtonActions.append(new AssignableButtonAction(this, _buttonActionWHBH));
+    _assignableCamButtonActions.append(new AssignableButtonAction(this, _buttonActionNUC));
+    _assignableCamButtonActions.append(new AssignableButtonAction(this, _buttonActionSnap));
+    _assignableCamButtonActions.append(new AssignableButtonAction(this, _buttonActionRec));
+    _assignableCamButtonActions.append(new AssignableButtonAction(this, _buttonActionSY));
+    _assignableCamButtonActions.append(new AssignableButtonAction(this, _buttonActionOBS));
+    _assignableCamButtonActions.append(new AssignableButtonAction(this, _buttonActionGRR));
+    _assignableCamButtonActions.append(new AssignableButtonAction(this, _buttonActionStow));
+    _assignableCamButtonActions.append(new AssignableButtonAction(this, _buttonActionPilot));
+    _assignableCamButtonActions.append(new AssignableButtonAction(this, _buttonActionRetract));
+    _assignableCamButtonActions.append(new AssignableButtonAction(this, _buttonActionHoldCord));
+    for(int i = 0; i < _assignableCamButtonActions.count(); i++) {
+        AssignableButtonAction* p = qobject_cast<AssignableButtonAction*>(_assignableCamButtonActions[i]);
+        _availableCamActionTitles << p->action();
+    }
+    emit assignableCamActionsChanged();
+}
+
+void Joystick::setCamJoystickDZ(int DZ)
+{
+    _camJoystickDZ = DZ;
+}
+
+void Joystick::setCamJoystickGain(int gain)
+{
+    _camJoystickGain = gain;
+}
+
+void Joystick::setCamJoystickRollInvert(bool value)
+{
+    _camJoystickRollInvert = value;
+}
+
+void Joystick::setCamJoystickPitchInvert(bool value)
+{
+    _camJoystickPitchInvert = value;
+}
+
+/* ------------------------------------------------------------------------------------------------------*/
 
 int Joystick::throttleMode()
 {

@@ -206,8 +206,30 @@ QGCCacheWorker::_runTask(QGCMapTask *task)
         case QGCMapTask::taskTestInternet:
             _testInternet();
             return;
+        /* NextVision */
+        case QGCMapTask::taskLoadElevationTileSetsTask:
+            _loadElevationTileSets();
+            return;
     }
     qCWarning(QGCTileCacheLog) << "_runTask given unhandled task type" << task->type();
+}
+
+//-----------------------------------------------------------------------------
+/* NextVision */
+void QGCCacheWorker::_loadElevationTileSets()
+{
+    QSqlQuery query(*_db);
+    QString s = QString("SELECT hash,tile,size FROM Tiles WHERE format = 'bin'");
+    if(query.exec(s))
+    {
+         while(query.next())
+         {
+             QString hash = query.value("hash").toString();
+             QByteArray tileByts = query.value("tile").toByteArray();
+             /* The tile size as bytes array */
+             emit tileLoaded(hash,tileByts);
+         }
+    }
 }
 
 //-----------------------------------------------------------------------------

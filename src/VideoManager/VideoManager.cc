@@ -98,8 +98,13 @@ VideoManager::setToolbox(QGCToolbox *toolbox)
    QString videoSource = _videoSettings->videoSource()->rawValue().toString();
    connect(_videoSettings->videoSource(),   &Fact::rawValueChanged, this, &VideoManager::_videoSourceChanged);
    connect(_videoSettings->udpPort(),       &Fact::rawValueChanged, this, &VideoManager::_udpPortChanged);
+   connect(_videoSettings->udpMulticastIP(), &Fact::rawValueChanged, this, &VideoManager::_udpMulticastIPChanged);
    connect(_videoSettings->rtspUrl(),       &Fact::rawValueChanged, this, &VideoManager::_rtspUrlChanged);
    connect(_videoSettings->tcpUrl(),        &Fact::rawValueChanged, this, &VideoManager::_tcpUrlChanged);
+   connect(_videoSettings->udpFwdEn(),        &Fact::rawValueChanged, this, &VideoManager::_udpFwdEnChanged);
+   connect(_videoSettings->udpFwdSrcPort(),   &Fact::rawValueChanged, this, &VideoManager::_udpFwdSrcPortChanged);
+   connect(_videoSettings->udpFwdDstIP(),     &Fact::rawValueChanged, this, &VideoManager::_udpFwdDstIPChanged);
+   connect(_videoSettings->udpFwdDstPort(),   &Fact::rawValueChanged, this, &VideoManager::_udpFwdDstPortChanged);
    connect(_videoSettings->aspectRatio(),   &Fact::rawValueChanged, this, &VideoManager::_aspectRatioChanged);
    connect(_videoSettings->lowLatencyMode(),&Fact::rawValueChanged, this, &VideoManager::_lowLatencyModeChanged);
    MultiVehicleManager *pVehicleMgr = qgcApp()->toolbox()->multiVehicleManager();
@@ -490,11 +495,84 @@ VideoManager::_udpPortChanged()
     _restartVideo(0);
 }
 
+void VideoManager::_udpMulticastIPChanged()
+{
+    _restartVideo(0);
+}
+
 //-----------------------------------------------------------------------------
 void
 VideoManager::_rtspUrlChanged()
 {
     _restartVideo(0);
+}
+
+//-----------------------------------------------------------------------------
+void
+VideoManager::_udpFwdEnChanged()
+{
+    /* disable video fwd if its not enabled */
+    bool udpfwden = _videoSettings->udpFwdEn()->rawValue().toBool();
+    if (  udpfwden == false )
+        _videoSettings->_clean_udp_fwd();
+    else
+    {
+        QHostAddress dst_address;
+        /* validate IP address */
+        if ( dst_address.setAddress(_videoSettings->udpFwdDstIP()->rawValue().toString()) == true )
+            _videoSettings->_update_udp_fwd();
+    }
+}
+
+//-----------------------------------------------------------------------------
+void
+VideoManager::_udpFwdSrcPortChanged()
+{
+    /* disable video fwd if its not enabled */
+    bool udpfwden = _videoSettings->udpFwdEn()->rawValue().toBool();
+    if (  udpfwden == false )
+        _videoSettings->_clean_udp_fwd();
+    else
+    {
+        QHostAddress dst_address;
+        /* validate IP address */
+        if ( dst_address.setAddress(_videoSettings->udpFwdDstIP()->rawValue().toString()) == true )
+            _videoSettings->_update_udp_fwd();
+    }
+}
+
+//-----------------------------------------------------------------------------
+void
+VideoManager::_udpFwdDstIPChanged()
+{
+    /* disable video fwd if its not enabled */
+    bool udpfwden = _videoSettings->udpFwdEn()->rawValue().toBool();
+    if (  udpfwden == false )
+        _videoSettings->_clean_udp_fwd();
+    else
+    {
+        QHostAddress dst_address;
+        /* validate IP address */
+        if ( dst_address.setAddress(_videoSettings->udpFwdDstIP()->rawValue().toString()) == true )
+            _videoSettings->_update_udp_fwd();
+    }
+}
+
+//-----------------------------------------------------------------------------
+void
+VideoManager::_udpFwdDstPortChanged()
+{
+    /* disable video fwd if its not enabled */
+    bool udpfwden = _videoSettings->udpFwdEn()->rawValue().toBool();
+    if (  udpfwden == false )
+        _videoSettings->_clean_udp_fwd();
+    else
+    {
+        QHostAddress dst_address;
+        /* validate IP address */
+        if ( dst_address.setAddress(_videoSettings->udpFwdDstIP()->rawValue().toString()) == true )
+            _videoSettings->_update_udp_fwd();
+    }
 }
 
 //-----------------------------------------------------------------------------
@@ -688,20 +766,40 @@ VideoManager::_updateSettings(unsigned id)
         }
     }
     QString source = _videoSettings->videoSource()->rawValue().toString();
+
+    QString mcast_ip = _videoSettings->udpMulticastIP()->rawValue().toString();
+
+    if ([&]()
+    {
+    	// Check if valid for multi-cast
+        QStringList octets = mcast_ip.split(".");
+        if (octets.size() != 4 || octets[0].toInt() < 224 || octets[0].toInt() > 239
+            || (octets[1].toInt() % 256 != octets[1].toInt())
+            || (octets[2].toInt() % 256 != octets[2].toInt())
+            || (octets[3].toInt() % 256 != octets[3].toInt()))
+            return true;
+
+        return false;
+    }())
+    {
+    	// Default to uni-cast
+        mcast_ip = "0.0.0.0";
+    }
+
     if (source == VideoSettings::videoSourceUDPH264)
-        settingsChanged |= _updateVideoUri(0, QStringLiteral("udp://0.0.0.0:%1").arg(_videoSettings->udpPort()->rawValue().toInt()));
+        settingsChanged |= _updateVideoUri(0, QStringLiteral("udp://%1:%2").arg(mcast_ip).arg(_videoSettings->udpPort()->rawValue().toInt()));
     else if (source == VideoSettings::videoSourceUDPH265)
-        settingsChanged |= _updateVideoUri(0, QStringLiteral("udp265://0.0.0.0:%1").arg(_videoSettings->udpPort()->rawValue().toInt()));
+        settingsChanged |= _updateVideoUri(0, QStringLiteral("udp265://%1:%2").arg(mcast_ip).arg(_videoSettings->udpPort()->rawValue().toInt()));
     else if (source == VideoSettings::videoSourceMPEGTS)
-        settingsChanged |= _updateVideoUri(0, QStringLiteral("mpegts://0.0.0.0:%1").arg(_videoSettings->udpPort()->rawValue().toInt()));
+        settingsChanged |= _updateVideoUri(0, QStringLiteral("mpegts://%1:%2").arg(mcast_ip).arg(_videoSettings->udpPort()->rawValue().toInt()));
     else if (source == VideoSettings::videoSourceRTSP)
         settingsChanged |= _updateVideoUri(0, _videoSettings->rtspUrl()->rawValue().toString());
     else if (source == VideoSettings::videoSourceTCP)
         settingsChanged |= _updateVideoUri(0, QStringLiteral("tcp://%1").arg(_videoSettings->tcpUrl()->rawValue().toString()));
     else if (source == VideoSettings::videoSource3DRSolo)
-        settingsChanged |= _updateVideoUri(0, QStringLiteral("udp://0.0.0.0:5600"));
+        settingsChanged |= _updateVideoUri(0, QStringLiteral("udp://%1:5600").arg(mcast_ip));
     else if (source == VideoSettings::videoSourceParrotDiscovery)
-        settingsChanged |= _updateVideoUri(0, QStringLiteral("udp://0.0.0.0:8888"));
+        settingsChanged |= _updateVideoUri(0, QStringLiteral("udp://%1:8888").arg(mcast_ip));
     else if (source == VideoSettings::videoSourceYuneecMantisG)
         settingsChanged |= _updateVideoUri(0, QStringLiteral("rtsp://192.168.42.1:554/live"));
 
@@ -734,6 +832,7 @@ VideoManager::_updateVideoUri(unsigned id, const QString& uri)
 
     _videoUri[id] = uri;
 
+    qDebug() << QString("New Video URI for id %1 > %2").arg(id).arg(uri);
     return true;
 }
 

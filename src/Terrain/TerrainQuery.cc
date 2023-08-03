@@ -419,6 +419,46 @@ void TerrainTileManager::addPathQuery(TerrainOfflineAirMapQuery* terrainQueryInt
     }
 }
 
+bool TerrainTileManager::requestCahcedData(const QGeoCoordinate& coordinate, double &elev)
+{
+    QString tileHash = _getTileHash(coordinate);
+    _tilesMutex.lock();
+    if (_tiles.contains(tileHash))
+    {
+        if (_tiles[tileHash].isValid())
+        {
+            elev = _tiles[tileHash].elevation(coordinate);
+            _tilesMutex.unlock();
+
+            if (qIsNaN(elev))
+                return false;
+
+            return true;
+        }
+    }
+    _tilesMutex.unlock();
+    return false;
+}
+
+
+void TerrainTileManager::addTileToCahce(const QByteArray tile_data,const QString tile_hash)
+{
+    TerrainTile* terrainTile = new TerrainTile(tile_data);
+    if (terrainTile->isValid()) {
+        _tilesMutex.lock();
+        if (!_tiles.contains(tile_hash)) {
+            qCDebug(TerrainQueryLog) << "TerrainTileManager::addTileToCahce hash:" << tile_hash;
+            _tiles.insert(tile_hash, *terrainTile);
+        } else {
+            qCDebug(TerrainQueryLog) << "TerrainTileManager::addTileToCahce Tile Already In Cahce";
+            delete terrainTile;
+        }
+        _tilesMutex.unlock();
+    } else {
+        qCDebug(TerrainQueryLog) << "TerrainTileManager::addTileToCahce Received invalid tile";
+    }
+}
+
 /// Either returns altitudes from cache or queues database request
 ///     @param[out] error true: altitude not returned due to error, false: altitudes returned
 /// @return true: altitude returned (check error as well), false: database query queued (altitudes not returned)

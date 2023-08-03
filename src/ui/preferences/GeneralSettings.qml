@@ -36,6 +36,8 @@ Rectangle {
     property Fact _userBrandImageOutdoor:               QGroundControl.settingsManager.brandImageSettings.userBrandImageOutdoor
     property Fact _virtualJoystick:                     QGroundControl.settingsManager.appSettings.virtualJoystick
     property Fact _virtualJoystickAutoCenterThrottle:   QGroundControl.settingsManager.appSettings.virtualJoystickAutoCenterThrottle
+    property Fact _virtualJoystickShowZoom:             QGroundControl.settingsManager.appSettings.virtualJoystickShowZoom
+    property Fact _showFullScreenButton:                QGroundControl.settingsManager.appSettings.showFullScreenButton
 
     property real   _labelWidth:                ScreenTools.defaultFontPixelWidth * 20
     property real   _comboFieldWidth:           ScreenTools.defaultFontPixelWidth * 30
@@ -135,6 +137,25 @@ Rectangle {
                             RowLayout {
                                 spacing: ScreenTools.defaultFontPixelWidth
 
+                                QGCLabel {
+                                    text:       qsTr("Telemetry Values Bar Location")
+                                    visible:    true
+                                }
+
+                                FactComboBox {
+                                    id:                     _telemValuesBarLocationCombobox
+                                    Layout.preferredWidth:  _comboFieldWidth
+                                    indexModel:             false
+                                    fact:                   _telemValuesBarLocation
+                                    visible:                true
+
+                                    property Fact   _telemValuesBarLocation:    QGroundControl.settingsManager.appSettings.telementryValuesBarLocation
+                                }
+                            }
+
+                            RowLayout {
+                                spacing: ScreenTools.defaultFontPixelWidth
+
                                 FactCheckBox {
                                     text:       qsTr("Virtual Joystick")
                                     visible:    _virtualJoystick.visible
@@ -142,15 +163,21 @@ Rectangle {
                                 }
 
                                 FactCheckBox {
-                                    text:       qsTr("Auto-Center Throttle")
-                                    visible:    _virtualJoystickAutoCenterThrottle.visible
+                                    text:       qsTr("Show Zoom")
+                                    visible:    _virtualJoystickShowZoom.visible
                                     enabled:    _virtualJoystick.rawValue
-                                    fact:       _virtualJoystickAutoCenterThrottle
+                                    fact:       _virtualJoystickShowZoom
                                 }
                             }
 
                             FactCheckBox {
-                                text:       qsTr("Use Vertical Instrument Panel")
+                                text:       qsTr("Show Full Screen Button")
+                                visible:    _showFullScreenButton.visible
+                                fact:       _showFullScreenButton
+                            }
+
+                            FactCheckBox {
+                                text:       qsTr("Hide Compass Panel")
                                 visible:    _alternateInstrumentPanel.visible
                                 fact:       _alternateInstrumentPanel
 
@@ -173,13 +200,78 @@ Rectangle {
                                 property Fact _lockNoseUpCompass: QGroundControl.settingsManager.flyViewSettings.lockNoseUpCompass
                             }
 
-                            FactCheckBox {
-                                text:       qsTr("Show simple camera controls (DIGICAM_CONTROL)")
-                                visible:    _showDumbCameraControl.visible
-                                fact:       _showDumbCameraControl
+                            GridLayout {
+                                columns: 2
+                                QGCLabel {
+                                    text:               qsTr("Camera Control Settings")
+                                    Layout.columnSpan:  2
+                                    Layout.alignment:   Qt.AlignHCenter
+                                }
 
-                                property Fact _showDumbCameraControl: QGroundControl.settingsManager.flyViewSettings.showSimpleCameraControl
+                                FactCheckBox {
+                                    text:       qsTr("Show Camera Controls")
+                                    visible:    _showDumbCameraControl.visible
+                                    fact:       _showDumbCameraControl
+                                    Layout.columnSpan:  2
+                                    Layout.alignment:   Qt.AlignLeft
+
+                                    property Fact _showDumbCameraControl: QGroundControl.settingsManager.flyViewSettings.showSimpleCameraControl
+                                }
+
+                                QGCLabel {
+                                    text:       qsTr("Quick View Mode")
+                                    visible:    true
+                                }
+
+                                FactComboBox {
+                                    id:                     _quickViewModeCombobox
+                                    Layout.preferredWidth:  _comboFieldWidth
+                                    indexModel:             false
+                                    fact:                   _quick_mode
+                                    visible:                true
+
+                                    property Fact   _quick_mode:    QGroundControl.settingsManager.appSettings.quickViewMode
+                                }
+
+                                QGCLabel {
+                                    text:       qsTr("Camera Control Font Size")
+                                    visible:    true
+                                }
+
+                                FactComboBox {
+                                    id:                     _canControlFontSizeCombobox
+                                    Layout.preferredWidth:  _comboFieldWidth
+                                    indexModel:             false
+                                    fact:                   _font_size
+                                    visible:                ScreenTools.isMobile
+
+                                    property Fact   _font_size:    QGroundControl.settingsManager.appSettings.camControlFontSize
+                                }
                             }
+
+                            /*GridLayout {
+                                columns: 2
+                                QGCLabel {
+                                    text:               qsTr("Track On Position Settings")
+                                    Layout.columnSpan:  2
+                                    Layout.alignment:   Qt.AlignHCenter
+                                }
+
+                                QGCLabel {
+                                    text:       qsTr("Track On Position Video Channel")
+                                    visible:    true
+                                }
+
+                                FactComboBox {
+                                    id:                     _nvVideoChannelCombobox
+                                    Layout.preferredWidth:  _comboFieldWidth
+                                    indexModel:             false
+                                    fact:                   _video_channel
+                                    visible:                true
+
+                                    property Fact   _video_channel:    QGroundControl.settingsManager.appSettings.nvVideoChannel
+                                }
+                            }*/
 
                             GridLayout {
                                 columns: 2
@@ -236,6 +328,20 @@ Rectangle {
                                 }
 
                                 QGCLabel {
+                                    text:       qsTr("Video Channel")
+                                    visible:    true
+                                }
+                                FactComboBox {
+                                    id:                     _nvVideoChannelCombobox
+                                    Layout.preferredWidth:  _comboFieldWidth
+                                    indexModel:             false
+                                    fact:                   _video_channel
+                                    visible:                true
+
+                                    property Fact   _video_channel:    QGroundControl.settingsManager.appSettings.nvVideoChannel
+                                }
+
+                                QGCLabel {
                                     id:         videoSourceLabel
                                     text:       qsTr("Source")
                                     visible:    !_videoAutoStreamConfig && _videoSettings.videoSource.visible
@@ -257,6 +363,61 @@ Rectangle {
                                     Layout.preferredWidth:  _comboFieldWidth
                                     fact:                   _videoSettings.udpPort
                                     visible:                udpPortLabel.visible
+                                }
+
+                                QGCLabel {
+                                    id:         udpMulticastLabel
+                                    text:       qsTr("UDP Multi-cast IP")
+                                    visible:    !_videoAutoStreamConfig && (_isUDP264 || _isUDP265 || _isMPEGTS) && _videoSettings.udpMulticastIP.visible
+                                }
+                                FactTextField {
+                                    Layout.preferredWidth:  _comboFieldWidth
+                                    fact:                   _videoSettings.udpMulticastIP
+                                    visible:                udpPortLabel.visible
+                                }
+
+                                Item {
+                                    width: 1;
+                                    height: 1;
+                                    visible:    !_videoAutoStreamConfig && (_isUDP264 || _isUDP265) && _videoSettings.udpPort.visible
+                                }
+                                FactCheckBox {
+                                    text:       qsTr("UDP Video Forward Enable")
+                                    fact:       _videoSettings.udpFwdEn
+                                    visible:    !_videoAutoStreamConfig && (_isUDP264 || _isUDP265) && _videoSettings.udpPort.visible
+                                }
+
+                                QGCLabel {
+                                    id:         udpFwdSrcPortLabel
+                                    text:       qsTr("UDP Forward Source Port")
+                                    visible:    !_videoAutoStreamConfig && (_isUDP264 || _isUDP265) && _videoSettings.udpPort.visible && _videoSettings.udpFwdEn.rawValue
+                                }
+                                FactTextField {
+                                    Layout.preferredWidth:  _comboFieldWidth
+                                    fact:                   _videoSettings.udpFwdSrcPort
+                                    visible:                udpFwdSrcPortLabel.visible
+                                }
+
+                                QGCLabel {
+                                    id:         udpFwdDstIPLabel
+                                    text:       qsTr("UDP Forward Destination IP")
+                                    visible:    !_videoAutoStreamConfig && (_isUDP264 || _isUDP265) && _videoSettings.udpPort.visible && _videoSettings.udpFwdEn.rawValue
+                                }
+                                FactTextField {
+                                    Layout.preferredWidth:  _comboFieldWidth
+                                    fact:                   _videoSettings.udpFwdDstIP
+                                    visible:                udpFwdDstIPLabel.visible
+                                }
+
+                                QGCLabel {
+                                    id:         udpFwdDstPortLabel
+                                    text:       qsTr("UDP Forward Destination Port")
+                                    visible:    !_videoAutoStreamConfig && (_isUDP264 || _isUDP265) && _videoSettings.udpPort.visible && _videoSettings.udpFwdEn.rawValue
+                                }
+                                FactTextField {
+                                    Layout.preferredWidth:  _comboFieldWidth
+                                    fact:                   _videoSettings.udpFwdDstPort
+                                    visible:                udpFwdDstPortLabel.visible
                                 }
 
                                 QGCLabel {
@@ -1116,7 +1277,7 @@ Rectangle {
 
                     Item { width: 1; height: _margins }
                     QGCLabel {
-                        text:               qsTr("%1 Version").arg(QGroundControl.appName)
+                        text:               qsTr("CCA3 Version %1").arg(QGroundControl.appName)
                         Layout.alignment:   Qt.AlignHCenter
                     }
                     QGCLabel {

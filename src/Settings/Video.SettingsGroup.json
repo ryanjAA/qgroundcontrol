@@ -18,6 +18,49 @@
     "min":              1025,
     "default":     5600
 },
+
+{
+    "name":             "udpMulticastIP",
+    "shortDesc": "UDP Multi-cast Source",
+    "longDesc":  "UDP Multi-cast Source, needed if the video stream is multicast.\nDoes not conflict with unicast stream.",
+    "type":             "string",
+    "default":     ""
+},
+
+{
+    "name":             "udpFwdEn",
+    "shortDesc": "UDP Video Forward Enable",
+    "longDesc":  "Enable Video Forward Over UDP.",
+    "type":             "bool",
+    "default":     false
+},
+
+{
+    "name":             "udpFwdSrcPort",
+    "shortDesc": "UDP Video Forward Src Port",
+    "longDesc":  "UDP Video Forward Source Port.",
+    "type":             "uint16",
+    "min":              1025,
+    "default":          11124
+},
+
+{
+    "name":             "udpFwdDstIP",
+    "shortDesc": "UDP Video Forward Dst IP",
+    "longDesc":  "UDP Video Forward Destination IP.",
+    "type":             "string",
+    "default":     ""
+},
+
+{
+    "name":             "udpFwdDstPort",
+    "shortDesc": "UDP Video Forward UDP Dst Port",
+    "longDesc":  "UDP Video Forward UDP Destination Port.",
+    "type":             "uint16",
+    "min":              1025,
+    "default":          11224
+},
+
 {
     "name":             "rtspUrl",
     "shortDesc": "Video RTSP Url",

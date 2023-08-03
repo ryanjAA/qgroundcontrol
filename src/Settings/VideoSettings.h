@@ -22,6 +22,11 @@ public:
 
     DEFINE_SETTINGFACT(videoSource)
     DEFINE_SETTINGFACT(udpPort)
+    DEFINE_SETTINGFACT(udpMulticastIP)
+    DEFINE_SETTINGFACT(udpFwdEn)
+    DEFINE_SETTINGFACT(udpFwdSrcPort)
+    DEFINE_SETTINGFACT(udpFwdDstIP)
+    DEFINE_SETTINGFACT(udpFwdDstPort)
     DEFINE_SETTINGFACT(tcpUrl)
     DEFINE_SETTINGFACT(rtspUrl)
     DEFINE_SETTINGFACT(aspectRatio)
@@ -73,6 +78,16 @@ public:
     static const char* videoSource3DRSolo;
     static const char* videoSourceParrotDiscovery;
     static const char* videoSourceYuneecMantisG;
+
+    QUdpSocket*             _udp_socket             = nullptr;
+    int                     _udp_fwd_src_port;
+    QString                 _udp_fwd_dst_ip;
+    int                     _udp_fwd_dst_port;
+    int                     _udp_local_dst_port;
+
+    void _udp_packet_rx_cb();
+    void _update_udp_fwd();
+    void _clean_udp_fwd();
 
 signals:
     void streamConfiguredChanged    (bool configured);

@@ -16,7 +16,7 @@
 #include "Vehicle.h"
 #include "MultiVehicleManager.h"
 
-#include <SDL.h>
+#include "SDL.h"
 
 /// @brief SDL Joystick Interface
 class JoystickSDL : public Joystick

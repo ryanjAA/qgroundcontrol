@@ -13,6 +13,7 @@ import QGroundControl               1.0
 import QGroundControl.Controls      1.0
 import QGroundControl.Controllers   1.0
 import QGroundControl.ScreenTools   1.0
+import QtGraphicalEffects 1.0
 
 Item {
     id:         _root
@@ -75,8 +76,61 @@ Item {
         id: flyViewVideoMouseArea
         anchors.fill:       parent
         enabled:            pipState.state === pipState.fullState
-        hoverEnabled: true
-        onDoubleClicked:    QGroundControl.videoManager.fullScreen = !QGroundControl.videoManager.fullScreen
+        onDoubleClicked: {            
+            QGroundControl.videoManager.fullScreen = !QGroundControl.videoManager.fullScreen
+        }
+        onClicked: {
+            /* Calculating the position to track on */
+            var videoWidth
+            var videoHeight
+            var videoMargin
+            var xPos = mouseX
+            videoHeight = height
+            videoWidth = (videoHeight * 16.0 ) / 9.0
+            videoMargin = (width - videoWidth) / 2.0
+            if(mouseX < (videoMargin + 16))
+                xPos = videoMargin + 16
+            else if(mouseX > (videoMargin + videoWidth - 16) )
+                xPos = (videoMargin + videoWidth - 16)
+            xPos -= videoMargin
+            var xScaled = (1280.0 * xPos) / videoWidth
+            var yScaled = (720.0 * mouseY) / videoHeight
+            /* Sending the Track On Position command to the TRIP */
+            joystickManager.cameraManagement.trackOnPosition(xScaled,yScaled,QGroundControl.settingsManager.appSettings.nvVideoChannel.rawValue);
+        }
+    }
+
+    Rectangle {
+        id:                     _exitFullScreenVideo
+        anchors.right :         parent.right
+        anchors.top:            parent.top
+        height:                 ScreenTools.isMobile ? ScreenTools.defaultFontPixelHeight*3.0 : ScreenTools.defaultFontPixelHeight*2.0
+        width:                  height * 1.2
+        color:                  Qt.rgba(0,0,0,0)
+        anchors.margins:        ScreenTools.defaultFontPixelWidth * 0.75
+        visible:                QGroundControl.videoManager.fullScreen
+
+        Image {
+            id:                 _imageExit
+            width:              parent.width
+            height:             parent.height
+            sourceSize.height:  height
+            source:             "/InstrumentValueIcons/close-outline.svg"
+            fillMode:           Image.PreserveAspectFit
+            anchors.verticalCenter:     parent.verticalCenter
+            anchors.horizontalCenter:   parent.horizontalCenter
+        }
+        MouseArea {
+            anchors.fill:   parent
+            onClicked:      {
+                QGroundControl.videoManager.fullScreen = false
+            }
+        }
+        ColorOverlay {
+            anchors.fill:       _imageExit
+            source:             _imageExit
+            color:              "white"
+        }
     }
 
     ProximityRadarVideoView{

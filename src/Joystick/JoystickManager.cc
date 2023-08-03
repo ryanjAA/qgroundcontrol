@@ -26,11 +26,14 @@ QGC_LOGGING_CATEGORY(JoystickManagerLog, "JoystickManagerLog")
 
 const char * JoystickManager::_settingsGroup =              "JoystickManager";
 const char * JoystickManager::_settingsKeyActiveJoystick =  "ActiveJoystick";
+const char * JoystickManager::_settingsKeyActiveCamJoystick =  "ActiveCamJoystick";     /* NextVision */
 
 JoystickManager::JoystickManager(QGCApplication* app, QGCToolbox* toolbox)
     : QGCTool(app, toolbox)
     , _activeJoystick(nullptr)
     , _multiVehicleManager(nullptr)
+    , _activeCamJoystick(nullptr)       /* NextVision */
+    , _cameraManagement(nullptr)        /* NextVision */
 {
 }
 
@@ -50,7 +53,20 @@ void JoystickManager::setToolbox(QGCToolbox *toolbox)
 
     _multiVehicleManager = _toolbox->multiVehicleManager();
 
+    _cameraManagement = new CameraManagement(nullptr,_multiVehicleManager,this);
+
     QQmlEngine::setObjectOwnership(this, QQmlEngine::CppOwnership);
+}
+
+CameraManagement* JoystickManager::cameraManagement()
+{
+    return _cameraManagement;
+}
+
+void JoystickManager::setCameraManagement(CameraManagement *camManagement)
+{
+    _cameraManagement = camManagement;
+    emit activeCameraManagementChanged();
 }
 
 void JoystickManager::init() {
@@ -84,6 +100,7 @@ void JoystickManager::_setActiveJoystickFromSettings(void)
     if (_activeJoystick && !newMap.contains(_activeJoystick->name())) {
         qCDebug(JoystickManagerLog) << "Active joystick removed";
         setActiveJoystick(nullptr);
+        setActiveCamJoystick(nullptr);      /* NextVision */
     }
 
     // Check to see if our current mapping contains any joysticks that are not in the new mapping
@@ -103,20 +120,38 @@ void JoystickManager::_setActiveJoystickFromSettings(void)
 
     if (!_name2JoystickMap.count()) {
         setActiveJoystick(nullptr);
+        setActiveCamJoystick(nullptr);      /* NextVision */
         return;
     }
 
+    /* NextVision */
+    /* ------------------------------------------------------------------------------------------------------*/
     QSettings settings;
-
+    
     settings.beginGroup(_settingsGroup);
-    QString name = settings.value(_settingsKeyActiveJoystick).toString();
-
-    if (name.isEmpty()) {
-        name = _name2JoystickMap.first()->name();
+    QString joy_name = settings.value(_settingsKeyActiveJoystick).toString();
+    if (joy_name.isEmpty()) {
+        joy_name = _name2JoystickMap.first()->name();
+    }
+    QString cam_joy_name = settings.value(_settingsKeyActiveCamJoystick).toString();
+    if (cam_joy_name.isEmpty()) {
+        cam_joy_name = _name2JoystickMap.first()->name();
     }
 
-    setActiveJoystick(_name2JoystickMap.value(name, _name2JoystickMap.first()));
+    /* check if the joystick is the same */
+    if ( joy_name == cam_joy_name )
+    {
+        Joystick* joystick = _name2JoystickMap.value(joy_name, _name2JoystickMap.first());
+        joystick->_is_same_joystick = true;
+    }
+
+    /* Must Be First !!!!! */
+    setActiveCamJoystick(_name2JoystickMap.value(cam_joy_name, _name2JoystickMap.first()));
+    settings.setValue(_settingsKeyActiveCamJoystick, _activeCamJoystick->name());
+
+    setActiveJoystick(_name2JoystickMap.value(joy_name, _name2JoystickMap.first()));
     settings.setValue(_settingsKeyActiveJoystick, _activeJoystick->name());
+    /* ------------------------------------------------------------------------------------------------------*/
 }
 
 Joystick* JoystickManager::activeJoystick(void)
@@ -142,6 +177,8 @@ void JoystickManager::setActiveJoystick(Joystick* joystick)
     }
 
     _activeJoystick = joystick;
+    if ( _activeJoystick )                          /* NextVision */
+        _activeJoystick->_is_cam_joystick = false;  /* NextVision */
 
     if (_activeJoystick != nullptr) {
         qCDebug(JoystickManagerLog) << "Set active:" << _activeJoystick->name();
@@ -184,6 +221,61 @@ void JoystickManager::setActiveJoystickName(const QString& name)
 
     setActiveJoystick(_name2JoystickMap[name]);
 }
+
+/* NextVision Added code for Camera Joystick*/
+/* ------------------------------------------------------------------------------------------------------*/
+QString JoystickManager::activeCamJoystickName(void)
+{
+    return _activeCamJoystick ? _activeCamJoystick->name() : QString();
+}
+
+void JoystickManager::setActiveCamJoystickName(const QString& name)
+{
+    if (!_name2JoystickMap.contains(name)) {
+        qCWarning(JoystickManagerLog) << "Set cam active not in map" << name;
+        return;
+    }
+
+    setActiveCamJoystick(_name2JoystickMap[name]);
+}
+
+Joystick* JoystickManager::activeCamJoystick(void)
+{
+    return _activeCamJoystick;
+}
+
+void JoystickManager::setActiveCamJoystick(Joystick* joystick)
+{
+    QSettings settings;
+
+    if (joystick != nullptr && !_name2JoystickMap.contains(joystick->name())) {
+        qCWarning(JoystickManagerLog) << "Set cam active not in map" << joystick->name();
+        return;
+    }
+
+    if (_activeCamJoystick == joystick) {
+        return;
+    }
+
+    if (_activeCamJoystick) {
+        _activeCamJoystick->stopPolling();
+    }
+
+    _activeCamJoystick = joystick;
+    if ( _activeCamJoystick )
+        _activeCamJoystick->_is_cam_joystick = true;
+
+    if (_activeCamJoystick != nullptr) {
+        qCDebug(JoystickManagerLog) << "Set cam active:" << _activeCamJoystick->name();
+
+        settings.beginGroup(_settingsGroup);
+        settings.setValue(_settingsKeyActiveCamJoystick, _activeCamJoystick->name());
+    }
+
+    emit activeCamJoystickChanged(_activeCamJoystick);
+    emit activeCamJoystickNameChanged(_activeCamJoystick?_activeCamJoystick->name():"");
+}
+/* ------------------------------------------------------------------------------------------------------*/
 
 /*
  * TODO: move this to the right place: JoystickSDL.cc and JoystickAndroid.cc respectively and call through Joystick.cc

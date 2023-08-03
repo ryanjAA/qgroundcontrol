@@ -132,6 +132,9 @@
 
 #include "QGCMapEngine.h"
 
+/* NextVision Version Number */
+#define NV_VERSION "v1.0.2"
+
 class FinishVideoInitialization : public QRunnable
 {
 public:
@@ -261,7 +264,7 @@ QGCApplication::QGCApplication(int &argc, char* argv[], bool unitTesting)
         // name. Also we want to run unit tests with clean settings every time.
         applicationName = QStringLiteral("%1_unittest").arg(QGC_APPLICATION_NAME);
     } else {
-#ifdef DAILY_BUILD
+#ifdef DAILY_BUILD_2
         // This gives daily builds their own separate settings space. Allowing you to use daily and stable builds
         // side by side without daily screwing up your stable settings.
         applicationName = QStringLiteral("%1 Daily").arg(QGC_APPLICATION_NAME);
@@ -273,7 +276,7 @@ QGCApplication::QGCApplication(int &argc, char* argv[], bool unitTesting)
     setOrganizationName(QGC_ORG_NAME);
     setOrganizationDomain(QGC_ORG_DOMAIN);
 
-    this->setApplicationVersion(QString(APP_VERSION_STR));
+    this->setApplicationVersion(QString(NV_VERSION));
 
     // Set settings format
     QSettings::setDefaultFormat(QSettings::IniFormat);
@@ -364,7 +367,8 @@ QGCApplication::QGCApplication(int &argc, char* argv[], bool unitTesting)
    }
 #endif /* __mobile__ */
 
-    _checkForNewVersion();
+   /* NextVision Disable New Version Check */
+   /* _checkForNewVersion(); */
 }
 
 void QGCApplication::_exitWithError(QString errorMessage)

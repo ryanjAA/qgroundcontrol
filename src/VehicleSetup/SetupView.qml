@@ -268,6 +268,18 @@ Rectangle {
                 onClicked:          showPanel(this, "JoystickConfig.qml")
             }
 
+            SubMenuButton {
+                id:                 camjoystickButton
+                imageResource:      "/qmlimages/Joystick.png"
+                setupIndicator:     true
+                setupComplete:      joystickManager.activeJoystick ? joystickManager.activeJoystick.calibrated : false
+                exclusiveGroup:     setupButtonGroup
+                visible:            _fullParameterVehicleAvailable && joystickManager.joysticks.length !== 0
+                text:               qsTr("Camera Joystick")
+                Layout.fillWidth:   true
+                onClicked:          showPanel(this, "qrc:/nvqml/CamJoystickConfig.qml")
+            }
+
             Repeater {
                 id:     componentRepeater
                 model:  _fullParameterVehicleAvailable ? QGroundControl.multiVehicleManager.activeVehicle.autopilot.vehicleComponents : 0

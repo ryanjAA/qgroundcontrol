@@ -14,6 +14,7 @@
 #include <QQmlEngine>
 #include <QtQml>
 #include <QVariantList>
+#include <QUdpSocket>
 
 #ifndef QGC_DISABLE_UVC
 #include <QCameraInfo>
@@ -112,6 +113,11 @@ DECLARE_SETTINGSFACT(VideoSettings, rtspTimeout)
 DECLARE_SETTINGSFACT(VideoSettings, streamEnabled)
 DECLARE_SETTINGSFACT(VideoSettings, disableWhenDisarmed)
 DECLARE_SETTINGSFACT(VideoSettings, lowLatencyMode)
+DECLARE_SETTINGSFACT(VideoSettings, udpFwdEn)
+DECLARE_SETTINGSFACT(VideoSettings, udpFwdSrcPort)
+DECLARE_SETTINGSFACT(VideoSettings, udpFwdDstIP)
+DECLARE_SETTINGSFACT(VideoSettings, udpFwdDstPort)
+
 
 DECLARE_SETTINGSFACT_NO_FUNC(VideoSettings, videoSource)
 {
@@ -161,6 +167,17 @@ DECLARE_SETTINGSFACT_NO_FUNC(VideoSettings, udpPort)
     return _udpPortFact;
 }
 
+DECLARE_SETTINGSFACT_NO_FUNC(VideoSettings, udpMulticastIP)
+{
+    if (!_udpMulticastIPFact)
+    {
+        _udpMulticastIPFact = _createSettingsFact(udpMulticastIPName);
+        connect(_udpMulticastIPFact, &Fact::valueChanged, this, &VideoSettings::_configChanged);
+    }
+
+    return _udpMulticastIPFact;
+}
+
 DECLARE_SETTINGSFACT_NO_FUNC(VideoSettings, rtspUrl)
 {
     if (!_rtspUrlFact) {
@@ -184,18 +201,36 @@ bool VideoSettings::streamConfigured(void)
 #if !defined(QGC_GST_STREAMING)
     return false;
 #endif
+    bool udpfwden;
     //-- First, check if it's autoconfigured
     if(qgcApp()->toolbox()->videoManager()->autoStreamConfigured()) {
         qCDebug(VideoManagerLog) << "Stream auto configured";
         return true;
     }
+
+    /* disable video fwd if its not enabled */
+    udpfwden = udpFwdEn()->rawValue().toBool();
+    if (  udpfwden == false )
+        _clean_udp_fwd();
+
     //-- Check if it's disabled
     QString vSource = videoSource()->rawValue().toString();
     if(vSource == videoSourceNoVideo || vSource == videoDisabled) {
         return false;
     }
     //-- If UDP, check if port is set
-    if(vSource == videoSourceUDPH264 || vSource == videoSourceUDPH265) {
+    if(vSource == videoSourceUDPH264 || vSource == videoSourceUDPH265) {    
+        /* check if fwd is enabled */
+        QHostAddress dst_address;
+
+        /* check if fwd is enabled */
+        if (  udpfwden == true )
+        {
+            /* validate IP address */
+            if ( dst_address.setAddress(udpFwdDstIP()->rawValue().toString()) == true )
+                _update_udp_fwd();
+        }
+
         qCDebug(VideoManagerLog) << "Testing configuration for UDP Stream:" << udpPort()->rawValue().toInt();
         return udpPort()->rawValue().toInt() != 0;
     }
@@ -214,10 +249,82 @@ bool VideoSettings::streamConfigured(void)
         qCDebug(VideoManagerLog) << "Testing configuration for MPEG-TS Stream:" << udpPort()->rawValue().toInt();
         return udpPort()->rawValue().toInt() != 0;
     }
+
     return false;
 }
 
 void VideoSettings::_configChanged(QVariant)
 {
     emit streamConfiguredChanged(streamConfigured());
+}
+
+
+
+void VideoSettings::_clean_udp_fwd()
+{
+    /* clean the socket */
+    if ( _udp_socket )
+    {
+        qCDebug(VideoManagerLog) << "_clean_udp_fwd - purging udp fwd";
+        disconnect(_udp_socket, &QUdpSocket::readyRead,this, &VideoSettings::_udp_packet_rx_cb);
+        _udp_socket->close();
+        delete _udp_socket;
+        _udp_socket = nullptr;
+    }
+}
+
+void VideoSettings::_update_udp_fwd()
+{
+    /* the IP/Port numbers */
+    _udp_local_dst_port = udpPort()->rawValue().toInt();
+    _udp_fwd_src_port = udpFwdSrcPort()->rawValue().toInt();
+    _udp_fwd_dst_ip = udpFwdDstIP()->rawValue().toString();
+    _udp_fwd_dst_port = udpFwdDstPort()->rawValue().toInt();
+
+    /* check if first time */
+    if (_udp_socket == nullptr)
+    {
+        qCDebug(VideoManagerLog) << "Setting Up UDP Video Forward To:" << _udp_fwd_dst_ip << ":" << _udp_fwd_dst_port;
+    }
+    else
+    {
+        disconnect(_udp_socket, &QUdpSocket::readyRead,this, &VideoSettings::_udp_packet_rx_cb);
+        _udp_socket->close();
+        delete _udp_socket;
+        qCDebug(VideoManagerLog) << "Reconfigure UDP Video Forward To:" << _udp_fwd_dst_ip << ":" << _udp_fwd_dst_port;
+    }
+
+    _udp_socket = new QUdpSocket(this);
+    _udp_socket->bind(QHostAddress::Any, _udp_fwd_src_port);
+
+    if ([&]()
+    {
+        QStringList octets = _udp_fwd_dst_ip.split(".");
+        if (octets.size() != 4 || octets[0].toInt() < 224 || octets[0].toInt() > 239
+            || (octets[1].toInt() % 256 != octets[1].toInt())
+            || (octets[2].toInt() % 256 != octets[2].toInt())
+            || (octets[3].toInt() % 256 != octets[3].toInt()))
+            return false;
+
+        return true;
+    }())
+    {
+        const int TTL = _udp_socket->socketOption(QAbstractSocket::MulticastTtlOption).toInt();
+
+        // Required for multicast
+        _udp_socket->setSocketOption(QAbstractSocket::MulticastTtlOption, std::max<int>(TTL, 64));
+    }
+
+    connect(_udp_socket, &QUdpSocket::readyRead,this, &VideoSettings::_udp_packet_rx_cb);
+}
+
+
+void VideoSettings::_udp_packet_rx_cb()
+{
+    while (_udp_socket->hasPendingDatagrams())
+    {
+        QNetworkDatagram datagram = _udp_socket->receiveDatagram();     
+        _udp_socket->writeDatagram(datagram.data(), QHostAddress::LocalHost, _udp_local_dst_port);
+        _udp_socket->writeDatagram(datagram.data(), QHostAddress(_udp_fwd_dst_ip), _udp_fwd_dst_port);
+    }
 }

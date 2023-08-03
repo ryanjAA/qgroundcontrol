@@ -27,7 +27,7 @@ message(Qt version $$[QT_VERSION])
 
 include(QGCCommon.pri)
 
-TARGET   = QGroundControl
+TARGET   = CCA3
 TEMPLATE = app
 QGCROOT  = $$PWD
 
@@ -57,11 +57,11 @@ WindowsBuild {
 # Branding
 #
 
-QGC_APP_NAME        = "QGroundControl"
-QGC_ORG_NAME        = "QGroundControl.org"
+QGC_APP_NAME        = "CCA3"
+QGC_ORG_NAME        = "CCA3.org"
 QGC_ORG_DOMAIN      = "org.qgroundcontrol"
-QGC_APP_DESCRIPTION = "Open source ground control app provided by QGroundControl dev team"
-QGC_APP_COPYRIGHT   = "Copyright (C) 2019 QGroundControl Development Team. All rights reserved."
+QGC_APP_DESCRIPTION = "Open source ground control app provided by CCA3 dev team"
+QGC_APP_COPYRIGHT   = "Copyright (C) 2019 CCA3 Development Team. All rights reserved."
 
 WindowsBuild {
     QGC_INSTALLER_SCRIPT        = "$$SOURCE_DIR\\deploy\\windows\\nullsoft_installer.nsi"
@@ -354,7 +354,7 @@ CustomBuild {
         RESOURCES += $$PWD/resources/InstrumentValueIcons/InstrumentValueIcons.qrc
     }
 } else {
-    DEFINES += QGC_APPLICATION_NAME=\"\\\"QGroundControl\\\"\"
+    DEFINES += QGC_APPLICATION_NAME=\"\\\"CCA3\\\"\"
     DEFINES += QGC_ORG_NAME=\"\\\"QGroundControl.org\\\"\"
     DEFINES += QGC_ORG_DOMAIN=\"\\\"org.qgroundcontrol\\\"\"
     RESOURCES += \
@@ -380,9 +380,11 @@ DEPENDPATH += \
 INCLUDEPATH += .
 
 INCLUDEPATH += \
+    /usr/local/include/ \
     include/ui \
     src \
     src/ADSB \
+    src/ABS \
     src/api \
     src/AnalyzeView \
     src/Camera \
@@ -435,6 +437,10 @@ HEADERS += \
     src/api/QGCSettings.h \
     src/api/QmlComponentInfo.h \
     src/GPS/Drivers/src/base_station.h \
+    src/NvExt/NvExt_CameraManagement.h \
+    src/NvExt/NvExt_Sys_Report.h \
+    src/NvExt/NvExt_Los_Report.h \
+    src/NvExt/NvExt_GndCrs_Report.h
 
 contains (DEFINES, QGC_ENABLE_PAIRING) {
     HEADERS += \
@@ -447,6 +453,7 @@ SOURCES += \
     src/api/QGCOptions.cc \
     src/api/QGCSettings.cc \
     src/api/QmlComponentInfo.cc \
+    src/NvExt/NvExt_CameraManagement.cpp
 
 contains (DEFINES, QGC_ENABLE_PAIRING) {
     SOURCES += \
@@ -1537,11 +1544,26 @@ LinuxBuild {
     share_qgroundcontrol.files = $${IN_PWD}/resources/
 
     share_icons.path = $${PREFIX}/share/icons/hicolor/128x128/apps/
-    share_icons.files = $${IN_PWD}/resources/icons/qgroundcontrol.png
+    share_icons.files = $${IN_PWD}/resources/icons/cca3.png
     share_metainfo.path = $${PREFIX}/share/metainfo/
     share_metainfo.files = $${IN_PWD}/deploy/org.mavlink.qgroundcontrol.metainfo.xml
     share_applications.path = $${PREFIX}/share/applications/
-    share_applications.files = $${IN_PWD}/deploy/qgroundcontrol.desktop
+    share_applications.files = $${IN_PWD}/deploy/cca3.desktop
 
     INSTALLS += target share_qgroundcontrol share_icons share_metainfo share_applications
 }
+android: include($${SOURCE_DIR}/libs/OpenSSL/android_openssl/openssl.pri)
+
+ANDROID_EXTRA_LIBS = $$PWD/libs/OpenSSL/android_openssl/arm/libcrypto.so $$PWD/libs/OpenSSL/android_openssl/arm/libssl.so
+android: include(/home/nv/QGroundControl/qgroundcontrol/libs/OpenSSL/android_openssl/arm/openssl.pri)
+
+
+macx: LIBS += -L$$PWD/../../../../../Library/Frameworks/GStreamer.framework/Versions/1.0/lib/ -lgstnet-1.0.0
+
+INCLUDEPATH += $$PWD/../../../../../Library/Frameworks/GStreamer.framework/Versions/1.0/include
+DEPENDPATH += $$PWD/../../../../../Library/Frameworks/GStreamer.framework/Versions/1.0/include
+
+macx: LIBS += -L$$PWD/../../../../../Library/Frameworks/GStreamer.framework/Versions/1.0/lib/ -lsqlite3
+
+INCLUDEPATH += $$PWD/../../../../../Library/Frameworks/GStreamer.framework/Versions/1.0/include
+DEPENDPATH += $$PWD/../../../../../Library/Frameworks/GStreamer.framework/Versions/1.0/include

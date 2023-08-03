@@ -64,6 +64,9 @@ public:
     static QString              numberToString      (quint64 number);
     static int                  concurrentDownloads (QString type);
 
+    /* NextVision */
+    QGCCacheWorker          _worker;
+
 private slots:
     void _updateTotals          (quint32 totaltiles, quint64 totalsize, quint32 defaulttiles, quint64 defaultsize);
     void _pruned                ();
@@ -78,8 +81,7 @@ private:
     void _checkWipeDirectory    (const QString& dirPath);
     bool _wipeDirectory         (const QString& dirPath);
 
-private:
-    QGCCacheWorker          _worker;
+private:    
     QString                 _cachePath;
     QString                 _cacheFile;
     UrlFactory*             _urlFactory;

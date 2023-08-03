@@ -180,6 +180,7 @@ public:
     Q_PROPERTY(QString              formattedMessages           READ formattedMessages                                              NOTIFY formattedMessagesChanged)
     Q_PROPERTY(QString              latestError                 READ latestError                                                    NOTIFY latestErrorChanged)
     Q_PROPERTY(bool                 joystickEnabled             READ joystickEnabled            WRITE setJoystickEnabled            NOTIFY joystickEnabledChanged)
+    Q_PROPERTY(bool                 joystickCamEnabled     	    READ joystickCamEnabled         WRITE setJoystickCamEnabled         NOTIFY joystickCamEnabledChanged)   /* NextVision */
     Q_PROPERTY(int                  flowImageIndex              READ flowImageIndex                                                 NOTIFY flowImageIndexChanged)
     Q_PROPERTY(int                  rcRSSI                      READ rcRSSI                                                         NOTIFY rcRSSIChanged)
     Q_PROPERTY(bool                 px4Firmware                 READ px4Firmware                                                    NOTIFY firmwareTypeChanged)
@@ -331,6 +332,8 @@ public:
     Q_PROPERTY(QString  gitHash                     READ gitHash                    NOTIFY gitHashChanged)
     Q_PROPERTY(quint64  vehicleUID                  READ vehicleUID                 NOTIFY vehicleUIDChanged)
     Q_PROPERTY(QString  vehicleUIDStr               READ vehicleUIDStr              NOTIFY vehicleUIDChanged)
+    Q_PROPERTY(QVariantList  losCoords              READ losCoords                  NOTIFY losCoordsChanged)
+    Q_PROPERTY(int  snapShotStatus                  READ snapShotStatus             NOTIFY snapShotStatusChanged)
 
     /// Resets link status counters
     Q_INVOKABLE void resetCounters  ();
@@ -454,6 +457,9 @@ public:
 
     bool joystickEnabled            () const;
     void setJoystickEnabled         (bool enabled);
+    bool joystickCamEnabled();                      /* NextVision */
+    void setJoystickCamEnabled(bool enabled);       /* NextVision */
+
     void sendJoystickDataThreadSafe (float roll, float pitch, float yaw, float thrust, quint16 buttons);
 
     // Property accesors
@@ -589,6 +595,7 @@ public:
     int             telemetryRNoise             () const{ return _telemetryRNoise; }
     bool            autoDisarm                  ();
     bool            orbitActive                 () const { return _orbitActive; }
+    int             snapShotStatus              () const { return _snapShotStatus; }
     QGCMapCircle*   orbitMapCircle              () { return &_orbitMapCircle; }
     bool            readyToFlyAvailable         () const{ return _readyToFlyAvailable; }
     bool            readyToFly                  () const{ return _readyToFly; }
@@ -758,6 +765,7 @@ public:
 
     QString gitHash() const { return _gitHash; }
     quint64 vehicleUID() const { return _uid; }
+    QVariantList losCoords(void) const { return _losCoords; }
     QString vehicleUIDStr();
 
     bool soloFirmware() const { return _soloFirmware; }
@@ -840,6 +848,7 @@ public slots:
 signals:
     void coordinateChanged              (QGeoCoordinate coordinate);
     void joystickEnabledChanged         (bool enabled);
+    void joystickCamEnabledChanged      (bool enabled);                 /* NextVision */
     void mavlinkMessageReceived         (const mavlink_message_t& message);
     void homePositionChanged            (const QGeoCoordinate& homePosition);
     void armedPositionChanged();
@@ -902,6 +911,8 @@ signals:
     void gitHashChanged                 (QString hash);
     void vehicleUIDChanged              ();
     void loadProgressChanged            (float value);
+    void losCoordsChanged               ();
+    void snapShotStatusChanged          (int snapShotStatus);
 
     /// New RC channel values coming from RC_CHANNELS message
     ///     @param channelCount Number of available channels, cMaxRcChannels max
@@ -944,6 +955,8 @@ signals:
     void sensorsParametersResetAck      (bool success);
 
 private slots:
+    void _updateLineOfSight                 (QList<QGeoCoordinate> coordsList);
+    void _updateSnapShotStatus              (int status);
     void _mavlinkMessageReceived            (LinkInterface* link, mavlink_message_t message);
     void _sendMessageMultipleNext           ();
     void _parametersReady                   (bool parametersReady);
@@ -979,6 +992,8 @@ private:
     void _loadSettings                  ();
     void _saveSettings                  ();
     void _startJoystick                 (bool start);
+    void _saveCamSettings               ();                     /* NextVision */
+    void _startJoystickCam              (bool start);           /* NextVision */
     void _handlePing                    (LinkInterface* link, mavlink_message_t& message);
     void _handleHomePosition            (mavlink_message_t& message);
     void _handleHeartbeat               (mavlink_message_t& message);
@@ -1051,6 +1066,8 @@ private:
     QFile               _csvLogFile;
 
     bool            _joystickEnabled = false;
+    bool            _joystickCamEnabled = false;        /* NextVision */
+    QVariantList        _losCoords;
 
     UAS* _uas = nullptr;
 
@@ -1195,6 +1212,7 @@ private:
 
     // Orbit status values
     bool            _orbitActive = false;
+    int             _snapShotStatus = 0;
     QGCMapCircle    _orbitMapCircle;
     QTimer          _orbitTelemetryTimer;
     static const int _orbitTelemetryTimeoutMsecs = 3000; // No telemetry for this amount and orbit will go inactive
@@ -1377,6 +1395,7 @@ private:
     // Settings keys
     static const char* _settingsGroup;
     static const char* _joystickEnabledSettingsKey;
+    static const char* _joystickCamEnabledSettingsKey;  
 };
 
 Q_DECLARE_METATYPE(Vehicle::MavCmdResultFailureCode_t)

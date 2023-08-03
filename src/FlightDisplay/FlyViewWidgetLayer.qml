@@ -11,6 +11,7 @@ import QtQuick                  2.12
 import QtQuick.Controls         2.4
 import QtQuick.Dialogs          1.3
 import QtQuick.Layouts          1.12
+import QtGraphicalEffects 1.0
 
 import QtLocation               5.3
 import QtPositioning            5.3
@@ -22,13 +23,13 @@ import QGroundControl.Controls      1.0
 import QGroundControl.Airspace      1.0
 import QGroundControl.Airmap        1.0
 import QGroundControl.Controllers   1.0
-import QGroundControl.Controls      1.0
 import QGroundControl.FactSystem    1.0
 import QGroundControl.FlightDisplay 1.0
 import QGroundControl.FlightMap     1.0
 import QGroundControl.Palette       1.0
 import QGroundControl.ScreenTools   1.0
 import QGroundControl.Vehicle       1.0
+
 
 // This is the ui overlay layer for the widgets/tools for Fly View
 Item {
@@ -46,8 +47,7 @@ Item {
     property var    _guidedController:      globals.guidedControllerFlyView
     property real   _margins:               ScreenTools.defaultFontPixelWidth / 2
     property real   _toolsMargin:           ScreenTools.defaultFontPixelWidth * 0.75
-    property rect   _centerViewport:        Qt.rect(0, 0, width, height)
-    property real   _rightPanelWidth:       ScreenTools.defaultFontPixelWidth * 30
+    property rect   _centerViewport:        Qt.rect(0, 0, width, height)    
 
     QGCToolInsets {
         id:                     _totalToolInsets
@@ -113,47 +113,142 @@ Item {
         anchors.right:              parent.right
         width:                      _rightPanelWidth
         spacing:                    _toolsMargin
-        visible:                    QGroundControl.corePlugin.options.flyView.showInstrumentPanel && multiVehiclePanelSelector.showSingleVehiclePanel
+        visible:                    !QGroundControl.settingsManager.flyViewSettings.alternateInstrumentPanel.rawValue//QGroundControl.corePlugin.options.flyView.showInstrumentPanel && multiVehiclePanelSelector.showSingleVehiclePanel
         availableHeight:            parent.height - y - _toolsMargin
 
         property real rightInset: visible ? parent.width - x : 0
     }
 
-    PhotoVideoControl {
-        id:                     photoVideoControl
-        anchors.margins:        _toolsMargin
-        anchors.right:          parent.right
-        width:                  _rightPanelWidth
-        state:                  _verticalCenter ? "verticalCenter" : "topAnchor"
-        states: [
-            State {
-                name: "verticalCenter"
-                AnchorChanges {
-                    target:                 photoVideoControl
-                    anchors.top:            undefined
-                    anchors.verticalCenter: _root.verticalCenter
+    Rectangle {
+        id:                     _hidePhotoVideoControl
+        anchors.right :         _photoVideoControl.right
+        anchors.top:            setTopAnchors()
+        height:                 ScreenTools.isMobile ? ScreenTools.defaultFontPixelHeight*3.0 : ScreenTools.defaultFontPixelHeight*2.0
+        width:                  height * 1.2
+        color:                  Qt.rgba(0,0,0,0)
+        anchors.margins:        0
+        anchors.topMargin:      ScreenTools.isMobile ? 0 : -parent.height/5
+        visible:                QGroundControl.settingsManager.flyViewSettings.showSimpleCameraControl.rawValue
+
+        property bool show:    true
+
+        function setTopAnchors(){
+            if(ScreenTools.isMobile){
+                if(instrumentPanel.visible){
+                    return instrumentPanel.bottom
                 }
-            },
-            State {
-                name: "topAnchor"
-                AnchorChanges {
-                    target:                 photoVideoControl
-                    anchors.verticalCenter: undefined
-                    anchors.top:            instrumentPanel.bottom
+                else{
+                    return parent.top
                 }
             }
-        ]
+            /*else if(QGroundControl.settingsManager.flyViewSettings.alternateInstrumentPanel.rawValue){
+                return instrumentPanel.bottom
+            }*/
+            return parent.verticalCenter
+        }
 
-        property bool _verticalCenter: !QGroundControl.settingsManager.flyViewSettings.alternateInstrumentPanel.rawValue
+        function setShow(){
+            show = !show
+            if(show)
+                _image.source = "/InstrumentValueIcons/cheveron-outline-right.svg"
+            else
+                _image.source = "/InstrumentValueIcons/video-camera.svg"
+        }
+
+        Image {
+            id:                 _image
+            width:              parent.width
+            height:             parent.height
+            sourceSize.height:  height
+            source:             "/InstrumentValueIcons/cheveron-outline-right.svg"
+            fillMode:           Image.PreserveAspectFit
+            anchors.verticalCenter:     parent.verticalCenter
+            anchors.horizontalCenter:   parent.horizontalCenter
+        }
+        MouseArea {
+            anchors.fill:   parent
+            onClicked:      _hidePhotoVideoControl.setShow()
+        }
+        ColorOverlay {
+            anchors.fill:       _image
+            source:             _image
+            color:              "white"
+        }
+    }
+
+    Rectangle {
+        id:                     _fullScreenVideo
+        anchors.right :         _hidePhotoVideoControl.visible ? _hidePhotoVideoControl.left : parent.right
+        anchors.top:            setTopAnchors()
+        height:                 ScreenTools.isMobile ? ScreenTools.defaultFontPixelHeight*3.0 : ScreenTools.defaultFontPixelHeight*2.0
+        width:                  height * 1.2
+        color:                  Qt.rgba(0,0,0,0)
+        anchors.margins:        0
+        anchors.topMargin:      ScreenTools.isMobile ? 0 : -parent.height/5
+        visible:                QGroundControl.settingsManager.appSettings.showFullScreenButton.rawValue
+
+        function setTopAnchors(){
+            if(ScreenTools.isMobile){
+                if(instrumentPanel.visible){
+                    return instrumentPanel.bottom
+                }
+                else{
+                    return parent.top
+                }
+            }
+            return parent.verticalCenter
+        }
+
+        Image {
+            id:                 _imageFs
+            width:              parent.width
+            height:             parent.height
+            sourceSize.height:  height
+            source:             "/InstrumentValueIcons/screen-full.svg"
+            fillMode:           Image.PreserveAspectFit
+            anchors.verticalCenter:     parent.verticalCenter
+            anchors.horizontalCenter:   parent.horizontalCenter
+        }
+        MouseArea {
+            anchors.fill:   parent
+            onClicked:      {
+                if(videoControl !== null){
+                    if(videoControl.pipState.state === videoControl.pipState.fullState){
+                        QGroundControl.videoManager.fullScreen = true
+                    }
+                    else{
+                        _pipOverlay._swapPip()
+                        QGroundControl.videoManager.fullScreen = true
+                    }
+                }
+            }
+        }
+        ColorOverlay {
+            anchors.fill:       _imageFs
+            source:             _imageFs
+            color:              "white"
+        }
+    }
+
+    PhotoVideoControl {
+        id:                     _photoVideoControl
+        anchors.margins:        _toolsMargin
+        anchors.top:            _hidePhotoVideoControl.bottom
+        anchors.topMargin:      0
+        anchors.right:          parent.right
+        //width:                  _rightPanelWidth
+        visible:                QGroundControl.settingsManager.flyViewSettings.showSimpleCameraControl.rawValue && _hidePhotoVideoControl.show
+
     }
 
     TelemetryValuesBar {
         id:                 telemetryPanel
         x:                  recalcXPosition()
+        y:                  recalcYPosition()
         anchors.margins:    _toolsMargin
 
         // States for custom layout support
-        states: [
+        /*states: [
             State {
                 name: "bottom"
                 when: telemetryPanel.bottomMode
@@ -197,7 +292,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                 }
             }
-        ]
+        ]*/
 
         function recalcXPosition() {
             // First try centered
@@ -213,24 +308,55 @@ Item {
                 return parentToolInsets.leftEdgeBottomInset + _toolsMargin
             }
         }
+
+        function recalcYPosition(){
+            var top = _toolsMargin
+            var bottom = _root.height
+
+            if( _location === 0 )
+            {
+                return bottom - _toolsMargin - bottomInset
+            }
+            else if( _location === 1)
+            {
+                return top
+            }
+        }
+
+        property real bottomInset: height
+        property real _location: QGroundControl.settingsManager.appSettings.telementryValuesBarLocation.rawValue
     }
 
     //-- Virtual Joystick
     Loader {
         id:                         virtualJoystickMultiTouch
         z:                          QGroundControl.zOrderTopMost + 1
-        width:                      parent.width  - (_pipOverlay.width / 2)
+        width:                      setWidth()
         height:                     Math.min(parent.height * 0.25, ScreenTools.defaultFontPixelWidth * 16)
         visible:                    _virtualJoystickEnabled && !QGroundControl.videoManager.fullScreen && !(_activeVehicle ? _activeVehicle.usingHighLatencyLink : false)
-        anchors.bottom:             parent.bottom
-        anchors.bottomMargin:       parentToolInsets.leftEdgeBottomInset + ScreenTools.defaultFontPixelHeight * 2
-        anchors.horizontalCenter:   parent.horizontalCenter
+        anchors.bottom:             parent.bottom        
+        //anchors.bottomMargin:       parentToolInsets.leftEdgeBottomInset + ScreenTools.defaultFontPixelHeight * 2
+        //anchors.horizontalCenter:   parent.horizontalCenter
         source:                     "qrc:/qml/VirtualJoystick.qml"
         active:                     _virtualJoystickEnabled && !(_activeVehicle ? _activeVehicle.usingHighLatencyLink : false)
 
         property bool autoCenterThrottle: QGroundControl.settingsManager.appSettings.virtualJoystickAutoCenterThrottle.rawValue
 
         property bool _virtualJoystickEnabled: QGroundControl.settingsManager.appSettings.virtualJoystick.rawValue
+
+        function setWidth(){
+            if(!ScreenTools.isMobile){
+                return parent.width
+            }
+            else{
+                if( _photoVideoControl.height+_photoVideoControl.y > virtualJoystickMultiTouch.y ){
+                    return parent.width - _photoVideoControl.width
+                }
+                else{
+                    return parent.width
+                }
+            }
+        }
     }
 
     FlyViewToolStrip {

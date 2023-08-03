@@ -46,6 +46,8 @@ public:
     void    quit            ();
     bool    enqueueTask     (QGCMapTask* task);
     void    setDatabaseFile (const QString& path);
+    /* NextVision */
+    void    _loadElevationTileSets  ();
 
 protected:
     void    run             ();
@@ -86,6 +88,8 @@ private:
 signals:
     void        updateTotals            (quint32 totaltiles, quint64 totalsize, quint32 defaulttiles, quint64 defaultsize);
     void        internetStatus          (bool active);
+    /* NextVision */
+    void        tileLoaded              (QString tile_hash, QByteArray tile_data);
 
 private:
     QQueue<QGCMapTask*>             _taskQueue;

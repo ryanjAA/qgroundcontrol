@@ -15,6 +15,7 @@
 #include "QGCLoggingCategory.h"
 #include "Joystick.h"
 #include "MultiVehicleManager.h"
+#include "../NvExt/NvExt_CameraManagement.h"
 #include "QGCToolbox.h"
 
 #include <QVariantList>
@@ -36,6 +37,17 @@ public:
     Q_PROPERTY(Joystick* activeJoystick READ activeJoystick WRITE setActiveJoystick NOTIFY activeJoystickChanged)
     Q_PROPERTY(QString activeJoystickName READ activeJoystickName WRITE setActiveJoystickName NOTIFY activeJoystickNameChanged)
 
+    /* NextVision Added code for Camera Joystick*/
+    /* ------------------------------------------------------------------------------------------------------*/
+    Q_PROPERTY(Joystick* activeCamJoystick READ activeCamJoystick WRITE setActiveCamJoystick NOTIFY activeCamJoystickChanged)
+    Q_PROPERTY(QString activeCamJoystickName READ activeCamJoystickName WRITE setActiveCamJoystickName NOTIFY activeCamJoystickNameChanged)
+
+    QString activeCamJoystickName(void);
+    void setActiveCamJoystickName(const QString& name);
+    Joystick* activeCamJoystick(void);
+    void setActiveCamJoystick(Joystick* joystick);
+    /* ------------------------------------------------------------------------------------------------------*/
+
     /// List of available joysticks
     QVariantList joysticks();
     /// List of available joystick names
@@ -49,10 +61,15 @@ public:
     QString activeJoystickName(void);
     void setActiveJoystickName(const QString& name);
 
+    Q_PROPERTY(CameraManagement* cameraManagement READ cameraManagement WRITE setCameraManagement NOTIFY activeCameraManagementChanged)
+
     void restartJoystickCheckTimer(void);
 
     // Override from QGCTool
     virtual void setToolbox(QGCToolbox *toolbox);
+
+    CameraManagement* cameraManagement(void);
+    void setCameraManagement(CameraManagement *camManagement);
 
 public slots:
     void init();
@@ -62,6 +79,13 @@ signals:
     void activeJoystickNameChanged(const QString& name);
     void availableJoysticksChanged(void);
     void updateAvailableJoysticksSignal();
+
+    /* NextVision Added code for Camera Joystick*/
+    /* ------------------------------------------------------------------------------------------------------*/
+    void activeCameraManagementChanged(void);
+    void activeCamJoystickChanged(Joystick* joystick);
+    void activeCamJoystickNameChanged(const QString& name);
+    /* ------------------------------------------------------------------------------------------------------*/
 
 private slots:
     void _updateAvailableJoysticks(void);
@@ -76,6 +100,13 @@ private:
 
     static const char * _settingsGroup;
     static const char * _settingsKeyActiveJoystick;
+
+    /* NextVision Added code for Camera Joystick*/
+    /* ------------------------------------------------------------------------------------------------------*/
+    Joystick*                   _activeCamJoystick;
+    CameraManagement*           _cameraManagement;
+    static const char * _settingsKeyActiveCamJoystick;
+    /* ------------------------------------------------------------------------------------------------------*/
 
     int _joystickCheckTimerCounter;
     QTimer _joystickCheckTimer;

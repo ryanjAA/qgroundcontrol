@@ -1,4 +1,4 @@
-qgroundcontrol.desktop usr/share/applications
-release/qgroundcontrol usr/bin
-resources/ usr/share/qgroundcontrol
-resources/icons/qgroundcontrol.png usr/share/pixmaps
+cca3.desktop usr/share/applications
+release/cca3 usr/bin
+resources/ usr/share/cca3
+resources/icons/cca3.png usr/share/pixmaps

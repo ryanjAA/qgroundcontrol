@@ -556,6 +556,13 @@ FlightMap {
                 clickMenu.popup()
             }
         }
+        onPressAndHold : {
+                /* In case of long press  - DO PTC */
+                var clickCoord = _root.toCoordinate(Qt.point(mouse.x, mouse.y),false)
+                console.debug("clickCoord " , clickCoord)
+                if(_activeVehicle)
+                    joystickManager.cameraManagement.pointToCoordinate(clickCoord.latitude,clickCoord.longitude)
+        }
     }
 
     // Airspace overlap support

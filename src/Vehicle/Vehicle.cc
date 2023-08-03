@@ -70,6 +70,8 @@ const QString guided_mode_not_supported_by_vehicle = QObject::tr("Guided mode no
 
 const char* Vehicle::_settingsGroup =               "Vehicle%1";        // %1 replaced with mavlink system id
 const char* Vehicle::_joystickEnabledSettingsKey =  "JoystickEnabled";
+const char* Vehicle::_joystickCamEnabledSettingsKey = "JoystickCamEnabled"; /* NextVision */
+
 
 const char* Vehicle::_rollFactName =                "roll";
 const char* Vehicle::_pitchFactName =               "pitch";
@@ -182,6 +184,8 @@ Vehicle::Vehicle(LinkInterface*             link,
 
     connect(_mavlink, &MAVLinkProtocol::messageReceived,        this, &Vehicle::_mavlinkMessageReceived);
     connect(_mavlink, &MAVLinkProtocol::mavlinkMessageStatus,   this, &Vehicle::_mavlinkMessageStatus);
+    connect(_mavlink, &MAVLinkProtocol::lineOfSightChanged,  this, &Vehicle::_updateLineOfSight);
+    connect(_mavlink, &MAVLinkProtocol::snapShotStatusChanged,  this, &Vehicle::_updateSnapShotStatus);
 
     connect(this, &Vehicle::flightModeChanged,          this, &Vehicle::_handleFlightModeChanged);
     connect(this, &Vehicle::armedChanged,               this, &Vehicle::_announceArmedChanged);
@@ -589,6 +593,21 @@ void Vehicle::resetCounters()
     _messagesLost       = 0;
     _messageSeq         = 0;
     _heardFrom          = false;
+}
+
+void Vehicle::_updateLineOfSight(QList<QGeoCoordinate> coordsList)
+{
+    /* Removing the old points */
+    _losCoords.clear();
+    foreach( const auto &item, coordsList )
+        _losCoords << QVariant::fromValue(item);
+    emit(losCoordsChanged());
+}
+
+void Vehicle::_updateSnapShotStatus(int status)
+{
+    _snapShotStatus = status;
+    emit snapShotStatusChanged(_snapShotStatus);
 }
 
 void Vehicle::_mavlinkMessageReceived(LinkInterface* link, mavlink_message_t message)
@@ -1986,7 +2005,7 @@ void Vehicle::_loadSettings()
     // Joystick enabled is a global setting so first make sure there are any joysticks connected
     if (_toolbox->joystickManager()->joysticks().count()) {
         setJoystickEnabled(settings.value(_joystickEnabledSettingsKey, false).toBool());
-        _startJoystick(true);
+        setJoystickCamEnabled(settings.value(_joystickCamEnabledSettingsKey, false).toBool());      /* NextVision */
     }
 }
 
@@ -2022,11 +2041,53 @@ void Vehicle::_startJoystick(bool start)
         if (start) {
             joystick->startPolling(this);
         } else {
-            joystick->stopPolling();
-            joystick->wait(500);
+            if ( joystick->_is_same_joystick && !_joystickCamEnabled )
+                joystick->stopPolling();
         }
     }
 }
+
+/* NextVision Added Code For Camera Joystick */
+/* ------------------------------------------------------------------------------------------------------*/
+void Vehicle::_saveCamSettings(void)
+{
+    QSettings settings;
+
+    settings.beginGroup(QString(_settingsGroup).arg(_id));
+
+    // The camera joystick enabled setting should only be changed if a joystick is present
+    // since the checkbox can only be clicked if one is present
+    if (_toolbox->joystickManager()->joysticks().count()) {
+        settings.setValue(_joystickCamEnabledSettingsKey, _joystickCamEnabled);
+    }
+}
+
+void Vehicle::setJoystickCamEnabled(bool enabled)
+{
+    _joystickCamEnabled = enabled;
+    _startJoystickCam(_joystickCamEnabled);
+    _saveCamSettings();
+    emit joystickCamEnabledChanged(_joystickCamEnabled);
+}
+
+bool Vehicle::joystickCamEnabled(void)
+{
+    return _joystickCamEnabled;
+}
+
+void Vehicle::_startJoystickCam(bool start)
+{
+    Joystick* joystick = _joystickManager->activeCamJoystick();
+    if (joystick) {
+        if (start) {
+            joystick->startPolling(this);
+        } else {
+            if ( joystick->_is_same_joystick && !_joystickEnabled )
+                joystick->stopPolling();
+        }
+    }
+}
+/* ------------------------------------------------------------------------------------------------------*/
 
 QGeoCoordinate Vehicle::homePosition()
 {
@@ -2328,14 +2389,7 @@ void Vehicle::_remoteControlRSSIChanged(uint8_t rssi)
 void Vehicle::virtualTabletJoystickValue(double roll, double pitch, double yaw, double thrust)
 {
     // The following if statement prevents the virtualTabletJoystick from sending values if the standard joystick is enabled
-    if (!_joystickEnabled) {
-        sendJoystickDataThreadSafe(
-                    static_cast<float>(roll),
-                    static_cast<float>(pitch),
-                    static_cast<float>(yaw),
-                    static_cast<float>(thrust),
-                    0);
-    }
+    qgcApp()->toolbox()->joystickManager()->cameraManagement()->sendGimbalVirtualCommand(roll,pitch);
 }
 
 void Vehicle::_say(const QString& text)
@@ -2861,9 +2915,9 @@ void Vehicle::_sendMavCommandWorker(bool commandInt, bool showError, MavCmdResul
         } else {
             emit mavCommandResult(_id, targetCompId, command, MAV_RESULT_FAILED, failureCode);
         }
-        if (showError) {
-            qgcApp()->showAppMessage(tr("Unable to send command: %1.").arg(compIdAll ? tr("Internal error - MAV_COMP_ID_ALL not supported") : tr("Waiting on previous response to same command.")));
-        }
+        //if (showError) {
+        //    qgcApp()->showAppMessage(tr("Unable to send command: %1.").arg(compIdAll ? tr("Internal error - MAV_COMP_ID_ALL not supported") : tr("Waiting on previous response to same command.")));
+        //}
 
         return;
     }
@@ -2892,6 +2946,13 @@ void Vehicle::_sendMavCommandWorker(bool commandInt, bool showError, MavCmdResul
     entry.rgParam[6]        = param7;
     entry.maxTries          = _sendMavCommandShouldRetry(command) ? _mavCommandMaxRetryCount : 1;
     entry.ackTimeoutMSecs   = sharedLink->linkConfiguration()->isHighLatency() ? _mavCommandAckTimeoutMSecsHighLatency : _mavCommandAckTimeoutMSecs;
+
+    /* NextVision: disable error checking for SetGimbal */
+    if (command == MAV_CMD_DO_DIGICAM_CONTROL)
+    {
+        //entry.ackTimeoutMSecs = -1;
+    }
+
     entry.elapsedTimer.start();
 
     _mavCommandList.append(entry);
@@ -2913,7 +2974,8 @@ void Vehicle::_sendMavCommandFromList(int index)
             emit mavCommandResult(_id, commandEntry.targetCompId, commandEntry.command, MAV_RESULT_FAILED, MavCmdResultFailureNoResponseToCommand);
         }
         if (commandEntry.showError) {
-            qgcApp()->showAppMessage(tr("Vehicle did not respond to command: %1").arg(rawCommandName));
+            if ( commandEntry.command != MAV_CMD_DO_DIGICAM_CONTROL )
+                qgcApp()->showAppMessage(tr("Vehicle did not respond to command: %1").arg(rawCommandName));
         }
         return;
     }

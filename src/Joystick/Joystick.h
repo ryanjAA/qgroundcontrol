@@ -118,6 +118,38 @@ public:
     Q_INVOKABLE void    setButtonAction     (int button, const QString& action);
     Q_INVOKABLE QString getButtonAction     (int button);
 
+    /* NextVision Added QML properties for Camera Joystick
+     * ------------------------------------------------------------------------------------------------------*/
+    Q_PROPERTY(QStringList buttonCamActions     READ buttonCamActions       NOTIFY buttonCamActionsChanged)
+
+    //-- Actions that can be assigned to camera buttons
+    Q_PROPERTY(QmlObjectListModel* assignableCamActions    READ assignableCamActions          NOTIFY      assignableCamActionsChanged)
+    Q_PROPERTY(QStringList assignableCamActionTitles       READ assignableCamActionTitles     NOTIFY      assignableCamActionsChanged)
+    Q_PROPERTY(int camPitchRollAxle          READ camPitchRollAxle        WRITE setCamPitchRollAxle        NOTIFY camPitchRollAxleChanged)
+
+    Q_INVOKABLE void    setButtonCamAction  (int button, const QString& action);
+    Q_INVOKABLE QString getButtonCamAction  (int button);
+
+    /* NextVision Added vars to indicate if the joystick is shared or not */
+    bool                                        _is_cam_joystick;
+    bool                                        _is_same_joystick;
+    int         camPitchRollAxle                () { return _camPitchRollAxle; }
+    QStringList buttonCamActions                ();
+    void setCamPitchRollAxle                    (int axle);
+    QmlObjectListModel* assignableCamActions   () { return &_assignableCamButtonActions; }
+    QStringList assignableCamActionTitles      () { return _availableCamActionTitles; }
+    QList<AssignedButtonAction*>                _buttonCamActionArray;
+
+    int                                         _camJoystickDZ;
+    Q_INVOKABLE void    setCamJoystickDZ        (int DZ);
+    int                                         _camJoystickGain;
+    Q_INVOKABLE void    setCamJoystickGain      (int gain);
+    bool                                        _camJoystickRollInvert;
+    Q_INVOKABLE void    setCamJoystickRollInvert        (bool value);
+    bool                                        _camJoystickPitchInvert;
+    Q_INVOKABLE void    setCamJoystickPitchInvert        (bool value);
+    /* ------------------------------------------------------------------------------------------------------*/
+
     // Property accessors
 
     QString     name                () { return _name; }
@@ -216,6 +248,16 @@ signals:
     void setArmed                   (bool arm);
     void setVtolInFwdFlight         (bool set);
     void setFlightMode              (const QString& flightMode);
+
+    /* NextVision Added signals for Camera Joystick
+     * ------------------------------------------------------------------------------------------------------*/
+    void buttonCamActionsChanged    ();
+    void assignableCamActionsChanged();
+    void manualControlCam           (float roll_yaw, float pitch, unsigned char* buttons);
+    void manualControlCamQml        (float roll_yaw, float pitch);
+    void camPitchRollAxleChanged    ();
+    /* ------------------------------------------------------------------------------------------------------*/
+
     void emergencyStop              ();
 
 protected:
@@ -236,6 +278,16 @@ protected:
     void    _yawStep                (int direction);
     double  _localYaw       = 0.0;
     double  _localPitch     = 0.0;
+
+    /* NextVision Added protected members for Camera Joystick
+     * ------------------------------------------------------------------------------------------------------*/
+    void    _buildCamActionList     ();
+    void    _handleCamHat           (float *roll_yaw, float *pitch);
+    int     _camPitchRollAxle;
+    int     _camTimeDivider;
+    QmlObjectListModel              _assignableCamButtonActions;
+    QStringList                     _availableCamActionTitles;
+    /* ------------------------------------------------------------------------------------------------------*/
 
 private:
     virtual bool _open      ()          = 0;
@@ -351,6 +403,30 @@ private:
     static const char* _buttonActionGimbalLeft;
     static const char* _buttonActionGimbalRight;
     static const char* _buttonActionGimbalCenter;
+
+    /* NextVision Added private members for Camera Joystick
+     * ------------------------------------------------------------------------------------------------------*/
+    /* Configuration Keys */
+    static const char* _buttonCamActionNameKey;
+    static const char* _buttonCamActionRepeatKey;
+    static const char* _camPitchRollAxleKey;
+
+    /* Camera Button Actions */
+    static const char* _buttonActionZoomIn;
+    static const char* _buttonActionZoomOut;
+    static const char* _buttonActionDayIR;
+    static const char* _buttonActionWHBH;
+    static const char* _buttonActionNUC;
+    static const char* _buttonActionSnap;
+    static const char* _buttonActionRec;
+    static const char* _buttonActionSY;
+    static const char* _buttonActionOBS;
+    static const char* _buttonActionGRR;
+    static const char* _buttonActionStow;
+    static const char* _buttonActionPilot;
+    static const char* _buttonActionRetract;
+    static const char* _buttonActionHoldCord;
+    /* ------------------------------------------------------------------------------------------------------*/
     static const char* _buttonActionEmergencyStop;
 
 private slots:

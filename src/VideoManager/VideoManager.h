@@ -130,8 +130,13 @@ signals:
 protected slots:
     void _videoSourceChanged        ();
     void _udpPortChanged            ();
+    void _udpMulticastIPChanged     ();
     void _rtspUrlChanged            ();
     void _tcpUrlChanged             ();
+    void _udpFwdEnChanged           ();
+    void _udpFwdSrcPortChanged      ();
+    void _udpFwdDstIPChanged        ();
+    void _udpFwdDstPortChanged      ();
     void _lowLatencyModeChanged     ();
     void _updateUVC                 ();
     void _setActiveVehicle          (Vehicle* vehicle);
