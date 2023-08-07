@@ -1545,3 +1545,23 @@ LinuxBuild {
 
     INSTALLS += target share_qgroundcontrol share_icons share_metainfo share_applications
 }
+
+macx: LIBS += -L$$PWD/../../../../../usr/local/Cellar/gstreamer/1.20.3/lib/ -lgstnet-1.0.0
+
+INCLUDEPATH += $$PWD/../../../../../usr/local/Cellar/gstreamer/1.20.3/include
+DEPENDPATH += $$PWD/../../../../../usr/local/Cellar/gstreamer/1.20.3/include
+
+macx: LIBS += -L$$PWD/../../../../../usr/local/Cellar/gst-plugins-bad/1.20.3_1/lib/ -lgstbadaudio-1.0.0
+
+INCLUDEPATH += $$PWD/../../../../../usr/local/Cellar/gst-plugins-bad/1.20.3_1/include
+DEPENDPATH += $$PWD/../../../../../usr/local/Cellar/gst-plugins-bad/1.20.3_1/include
+
+macx: LIBS += -L$$PWD/../../../../../usr/local/Cellar/gst-plugins-base/1.20.3/lib/ -lgstallocators-1.0.0
+
+INCLUDEPATH += $$PWD/../../../../../usr/local/Cellar/gst-plugins-base/1.20.3/include
+DEPENDPATH += $$PWD/../../../../../usr/local/Cellar/gst-plugins-base/1.20.3/include
+
+macx: LIBS += -L$$PWD/../../../../../Library/Frameworks/GStreamer.framework/Versions/1.0/lib/ -lgstvulkan-1.0.0
+
+INCLUDEPATH += $$PWD/../../../../../Library/Frameworks/GStreamer.framework/Versions/1.0/include
+DEPENDPATH += $$PWD/../../../../../Library/Frameworks/GStreamer.framework/Versions/1.0/include
