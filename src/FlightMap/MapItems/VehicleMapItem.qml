@@ -70,10 +70,6 @@ MapQuickItem {
             mipmap:             true
             width:              _root.size                                                      ///AA - added from newest PR - works
             sourceSize.width:   _root.size
-            //width:              size              ///this is the original
-            //sourceSize.width:   size              ///this is the original
-            //width:              _adsbVehicle ? (alert ? size * 1 : size * 1) : size * 2       ///AA - this works if previous doesnt
-            //sourceSize.width:   _adsbVehicle ? (alert ? size * 1 : size * 1) : size * 2       ///AA - this works if previous doesnt
             fillMode:           Image.PreserveAspectFit
             transform: Rotation {
                 origin.x:       vehicleIcon.width  / 2
