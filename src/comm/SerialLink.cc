@@ -118,7 +118,7 @@ bool SerialLink::_connect(void)
             }
         }
 
-        _emitLinkError(tr("Error connecting: Could not create port. %1").arg(errorString));
+        _emitLinkError(tr("Error connecting: Could not create port. Unplug USB cable and check autoconnect is disabled and then connect manually. %1").arg(errorString));
         return false;
     }
     return true;

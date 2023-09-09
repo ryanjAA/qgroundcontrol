@@ -132,6 +132,9 @@
 
 #include "QGCMapEngine.h"
 
+/* Applied Aeronautics Version Number */
+ #define AA_VERSION "v2.0.0a"
+
 class FinishVideoInitialization : public QRunnable
 {
 public:
@@ -272,8 +275,10 @@ QGCApplication::QGCApplication(int &argc, char* argv[], bool unitTesting)
     setApplicationName(applicationName);
     setOrganizationName(QGC_ORG_NAME);
     setOrganizationDomain(QGC_ORG_DOMAIN);
+    
+    this->setApplicationVersion(QString(AA_VERSION)); //AA Added
 
-    this->setApplicationVersion(QString(APP_VERSION_STR));
+    //this->setApplicationVersion(QString(APP_VERSION_STR)); //AA - removed this. if problem uncomment out
 
     // Set settings format
     QSettings::setDefaultFormat(QSettings::IniFormat);

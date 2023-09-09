@@ -135,6 +135,25 @@ Rectangle {
                             RowLayout {
                                 spacing: ScreenTools.defaultFontPixelWidth
 
+                                QGCLabel {
+                                    text:       qsTr("Telemetry Values Bar Location")
+                                    visible:    true
+                                }
+
+                                FactComboBox {
+                                    id:                     _telemValuesBarLocationCombobox
+                                    Layout.preferredWidth:  _comboFieldWidth
+                                    indexModel:             false
+                                    fact:                   _telemValuesBarLocation
+                                    visible:                true
+
+                                    property Fact   _telemValuesBarLocation:    QGroundControl.settingsManager.appSettings.telementryValuesBarLocation
+                                }
+                            }
+
+                            RowLayout {
+                                spacing: ScreenTools.defaultFontPixelWidth
+
                                 FactCheckBox {
                                     text:       qsTr("Virtual Joystick")
                                     visible:    _virtualJoystick.visible
@@ -1042,7 +1061,8 @@ Rectangle {
                     QGCLabel {
                         id:         brandImageSectionLabel
                         text:       qsTr("Brand Image")
-                        visible:    QGroundControl.settingsManager.brandImageSettings.visible && !ScreenTools.isMobile
+                        ///visible:    QGroundControl.settingsManager.brandImageSettings.visible && !ScreenTools.isMobile
+                        visible:    false ///AA - added to remove visibility
                     }
                     Rectangle {
                         Layout.preferredWidth:  brandImageGrid.width + (_margins * 2)
@@ -1116,7 +1136,7 @@ Rectangle {
 
                     Item { width: 1; height: _margins }
                     QGCLabel {
-                        text:               qsTr("%1 Version").arg(QGroundControl.appName)
+                        text:               qsTr("%1").arg(QGroundControl.appName)
                         Layout.alignment:   Qt.AlignHCenter
                     }
                     QGCLabel {

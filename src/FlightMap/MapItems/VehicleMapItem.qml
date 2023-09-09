@@ -19,12 +19,15 @@ import QGroundControl.Controls      1.0
 
 /// Marker for displaying a vehicle location on the map
 MapQuickItem {
+    id: _root
+
     property var    vehicle                                                         /// Vehicle object, undefined for ADSB vehicle
     property var    map
     property double altitude:       Number.NaN                                      ///< NAN to not show
     property string callsign:       ""                                              ///< Vehicle callsign
     property double heading:        vehicle ? vehicle.heading.value : Number.NaN    ///< Vehicle heading, NAN for none
-    property real   size:           _adsbVehicle ? _adsbSize : _uavSize             /// Size for icon
+    //property real   size:           _adsbVehicle ? _adsbSize : _uavSize             /// Size for icon
+    property real   size:           ScreenTools.defaultFontPixelHeight * 3          /// AA ADDED Default size for icon, most usage overrides this
     property bool   alert:          false                                           /// Collision alert
 
     anchorPoint.x:  vehicleItem.width  / 2
@@ -33,8 +36,8 @@ MapQuickItem {
 
     property var    _activeVehicle: QGroundControl.multiVehicleManager.activeVehicle
     property bool   _adsbVehicle:   vehicle ? false : true
-    property real   _uavSize:       ScreenTools.defaultFontPixelHeight * 5
-    property real   _adsbSize:      ScreenTools.defaultFontPixelHeight * 2.5
+    //property real   _uavSize:       ScreenTools.defaultFontPixelHeight * 10
+    //property real   _adsbSize:      ScreenTools.defaultFontPixelHeight * 2.5
     property var    _map:           map
     property bool   _multiVehicle:  QGroundControl.multiVehicleManager.vehicles.count > 1
 
@@ -65,10 +68,12 @@ MapQuickItem {
             id:                 vehicleIcon
             source:             _adsbVehicle ? (alert ? "/qmlimages/AlertAircraft.svg" : "/qmlimages/AwarenessAircraft.svg") : vehicle.vehicleImageOpaque
             mipmap:             true
-            width:              _adsbVehicle ? (alert ? size * 1 : size * 1) : size * 2
-            sourceSize.width:   _adsbVehicle ? (alert ? size * 1 : size * 1) : size * 2
-            //width:              size
-            //sourceSize.width:   size
+            width:              _root.size                                                      ///AA - added from newest PR - works
+            sourceSize.width:   _root.size
+            //width:              size              ///this is the original
+            //sourceSize.width:   size              ///this is the original
+            //width:              _adsbVehicle ? (alert ? size * 1 : size * 1) : size * 2       ///AA - this works if previous doesnt
+            //sourceSize.width:   _adsbVehicle ? (alert ? size * 1 : size * 1) : size * 2       ///AA - this works if previous doesnt
             fillMode:           Image.PreserveAspectFit
             transform: Rotation {
                 origin.x:       vehicleIcon.width  / 2

@@ -22,7 +22,7 @@
     "shortDesc": "Automatically connect to a SiK Radio",
     "longDesc":  "If this option is enabled GroundControl will automatically connect to a vehicle which is detected on a SiK Radio communication link.",
     "type":             "bool",
-    "default":     true
+    "default":     false
 },
 {
     "name":             "autoConnectPX4Flow",
