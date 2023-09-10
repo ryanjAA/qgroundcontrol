@@ -223,6 +223,7 @@ void QmlObjectListModel::insert(int i, QList<QObject*> objects)
         j++;
 
         _objectList.insert(j, object);
+        j++;
     }
 
     insertRows(i, objects.count());

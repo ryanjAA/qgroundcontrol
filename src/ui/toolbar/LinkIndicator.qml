@@ -44,7 +44,8 @@ Item {
             linkSelectionMenu.insertItem(i, menuItem)
         }
 
-        showIndicator = _rgLinkNames.length > 0 ///AA - keeps link selection on at all times    }
+        showIndicator = _rgLinkNames.length > 0 ///AA - keeps link selection on at all times
+    }
 
     Component.onCompleted:  updateLinkSelectionMenu()
     on_RgLinkNamesChanged:  updateLinkSelectionMenu()
