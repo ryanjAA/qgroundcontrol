@@ -400,17 +400,17 @@ Rectangle {
                                     fact:                   QGroundControl.settingsManager.appSettings.defaultMissionItemAltitude
                                 }
 
-                                QGCLabel { text: qsTr("VTOL TransitionDistance") }
+                                /*QGCLabel { text: qsTr("VTOL Transition Distance") }
                                 FactTextField {
                                     Layout.preferredWidth:  _valueFieldWidth
                                     fact:                   QGroundControl.settingsManager.planViewSettings.vtolTransitionDistance
-                                }
+                                }*/ //AA- Removed
                             }
 
-                            FactCheckBox {
+                          /*  FactCheckBox {
                                 text:   qsTr("Use MAV_CMD_CONDITION_GATE for pattern generation")
                                 fact:   QGroundControl.settingsManager.planViewSettings.useConditionGate
-                            }
+                            } */ //AA- Removed
 
                             FactCheckBox {
                                 text:       qsTr("Missions Do Not Require Takeoff Item")
