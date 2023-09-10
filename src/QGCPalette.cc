@@ -52,7 +52,8 @@ void QGCPalette::_buildMap()
     //                                      Disabled   Enabled    Disabled   Enabled
     DECLARE_QGC_COLOR(window,               "#ffffff", "#ffffff", "#222222", "#222222")
     DECLARE_QGC_COLOR(windowShadeLight,     "#909090", "#828282", "#707070", "#626262")
-    DECLARE_QGC_COLOR(windowShade,          "#d9d9d9", "#d9d9d9", "#333333", "#333333")
+    //DECLARE_QGC_COLOR(windowShade,          "#d9d9d9", "#d9d9d9", "#333333", "#333333")
+    DECLARE_QGC_COLOR(windowShade,          "#d9d9d9", "#d9d9d9", "#343a40", "#343a40")
     DECLARE_QGC_COLOR(windowShadeDark,      "#bdbdbd", "#bdbdbd", "#282828", "#282828")
     DECLARE_QGC_COLOR(text,                 "#9d9d9d", "#000000", "#707070", "#ffffff")
     DECLARE_QGC_COLOR(warningText,          "#cc0808", "#cc0808", "#f85761", "#f85761")
@@ -79,11 +80,13 @@ void QGCPalette::_buildMap()
     DECLARE_QGC_COLOR(alertBorder,          "#808080", "#808080", "#808080", "#808080")
     DECLARE_QGC_COLOR(alertText,            "#000000", "#000000", "#000000", "#000000")
     DECLARE_QGC_COLOR(missionItemEditor,    "#585858", "#dbfef8", "#585858", "#585d83")
-    DECLARE_QGC_COLOR(toolStripHoverColor,  "#585858", "#9D9D9D", "#585858", "#585d83")
+    //DECLARE_QGC_COLOR(toolStripHoverColor,  "#585858", "#9D9D9D", "#585858", "#585d83")
+    DECLARE_QGC_COLOR(toolStripHoverColor,  "#439BD6", "#439BD6", "#439BD6", "#439BD6")
     DECLARE_QGC_COLOR(statusFailedText,     "#9d9d9d", "#000000", "#707070", "#ffffff")
     DECLARE_QGC_COLOR(statusPassedText,     "#9d9d9d", "#000000", "#707070", "#ffffff")
     DECLARE_QGC_COLOR(statusPendingText,    "#9d9d9d", "#000000", "#707070", "#ffffff")
     DECLARE_QGC_COLOR(toolbarBackground,    "#ffffff", "#ffffff", "#222222", "#222222")
+
 
     // Colors not affecting by theming
     //                                              Disabled    Enabled
