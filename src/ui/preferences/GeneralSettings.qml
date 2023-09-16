@@ -132,7 +132,7 @@ Rectangle {
                                 property Fact _showLogReplayStatusBar: QGroundControl.settingsManager.flyViewSettings.showLogReplayStatusBar
                             }
 
-                            RowLayout {
+                            /* RowLayout { //AA- Removed location option - need to update json and .cpp and .h but doesnt work
                                 spacing: ScreenTools.defaultFontPixelWidth
 
                                 QGCLabel {
@@ -147,9 +147,9 @@ Rectangle {
                                     fact:                   _telemValuesBarLocation
                                     visible:                true
 
-                                    property Fact   _telemValuesBarLocation:    QGroundControl.settingsManager.appSettings.telementryValuesBarLocation
+                                    property Fact _telemValuesBarLocation: QGroundControl.settingsManager.appSettings.telementryValuesBarLocation
                                 }
-                            }
+                            }*/
 
                             RowLayout {
                                 spacing: ScreenTools.defaultFontPixelWidth
