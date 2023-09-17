@@ -10,8 +10,10 @@
 QMAKE_PROJECT_DEPTH = 0 # undocumented qmake flag to force absolute paths in makefiles
 
 # These are disabled until proven correct
+DEFINES+=DISABLE_VIDEOSTREAMING
 DEFINES += QGC_GST_TAISYNC_DISABLED
 DEFINES += QGC_GST_MICROHARD_DISABLED
+
 
 exists($${OUT_PWD}/qgroundcontrol.pro) {
     error("You must use shadow build (e.g. mkdir build; cd build; qmake ../qgroundcontrol.pro).")
@@ -1566,3 +1568,13 @@ macx: LIBS += -L$$PWD/../../../../../Library/Frameworks/GStreamer.framework/Vers
 
 INCLUDEPATH += $$PWD/../../../../../Library/Frameworks/GStreamer.framework/Versions/1.0/include
 DEPENDPATH += $$PWD/../../../../../Library/Frameworks/GStreamer.framework/Versions/1.0/include
+
+macx: LIBS += -L$$PWD/../../../../../Library/Frameworks/GStreamer.framework/Versions/1.0/lib/ -lgsttranscoder-1.0.0
+
+INCLUDEPATH += $$PWD/../../../../../Library/Frameworks/GStreamer.framework/Versions/1.0/include
+DEPENDPATH += $$PWD/../../../../../Library/Frameworks/GStreamer.framework/Versions/1.0/include
+
+macx: LIBS += -L$$PWD/../../../Downloads/MoltenVK/MoltenVK/dylib/macOS/ -lMoltenVK
+
+INCLUDEPATH += $$PWD/../../../Downloads/MoltenVK/MoltenVK/dylib/macOS
+DEPENDPATH += $$PWD/../../../Downloads/MoltenVK/MoltenVK/dylib/macOS
