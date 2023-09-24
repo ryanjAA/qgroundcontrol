@@ -9,6 +9,8 @@
 
 QMAKE_PROJECT_DEPTH = 0 # undocumented qmake flag to force absolute paths in makefiles
 
+CXXFLAGS+=-Wno-deprecated
+
 # These are disabled until proven correct
 DEFINES+=DISABLE_VIDEOSTREAMING
 DEFINES += QGC_GST_TAISYNC_DISABLED
