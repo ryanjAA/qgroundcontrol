@@ -104,18 +104,3 @@ jobs:
         id:   git-branch-name
         uses: EthanSK/git-branch-name-action@v1
 
-      - name: Upload build to S3 Bucket
-        if:                 github.event_name == 'push'
-        working-directory:  ${{ runner.temp }}/shadow_build_dir/package
-        run: |
-              aws configure set aws_access_key_id ${{ AKIAQFGRVY5BZU45WB3Z }}
-              aws configure set aws_secret_access_key ${{ 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 }}
-              aws s3 cp ${ARTIFACT} s3://aags/builds/${GIT_BRANCH_NAME}/${ARTIFACT} --region us-west-2 --acl public-read
-
-      - name: Upload tagged stable build to S3 latest Bucket
-        if:                 github.event_name == 'push' && github.ref_type == 'tag'
-        working-directory:  ${{ runner.temp }}/shadow_build_dir/package
-        run: |
-              aws configure set aws_access_key_id ${{ AKIAQFGRVY5BZU45WB3Z }}
-              aws configure set aws_secret_access_key ${{ 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 }}
-              aws s3 cp ${ARTIFACT} s3://aags/latest/${ARTIFACT} --region us-west-2 --acl public-read
