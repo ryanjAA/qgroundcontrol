@@ -146,12 +146,6 @@ before_script:
         ./tools/update_android_version.sh ${BITNESS} ${TRAVIS_BRANCH};
     fi
     
-  # Install signing cert into OSX keychain
-  - if [[ "${SPEC}" = "macx-clang" && "${TRAVIS_PULL_REQUEST}" = "false" ]]; then
-        export CODESIGN=nocodesign;
-    fi
-
-    fi
 
 script:
   # run qmake
