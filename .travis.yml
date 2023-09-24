@@ -14,7 +14,6 @@ jobs:
     include:
         - stage: "Build"
           name: "OSX Installer"
-          if: branch = master
           os: osx
           osx_image: xcode11.3
           env: SPEC=macx-clang CONFIG=installer
