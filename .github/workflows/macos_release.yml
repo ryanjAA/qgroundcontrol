@@ -3,7 +3,7 @@ name: MacOS Release
 on:
   push:
     branches:
-      - 'master'
+      - 'AAGS-4.2.4-NO-CAM-No-RID-final'
       - 'Stable*'
     tags:
       - 'v*'
