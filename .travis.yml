@@ -7,7 +7,7 @@ env:
     - JOBS=4
     - SHADOW_BUILD_DIR=/tmp/shadow_build_dir
     - CODESIGN=nocodesign
-    - secure: RGovyUnMw3fp/bHZi058JvANT1rYmNqrsuSYew0cIgirO6YbMHr/rsjwCm1FTYpBl8s1zgr+u2b8ftYnfnCz2YT+Aip4NWrVYpVU0FEmfytGILrnUS0pjlt8m7fU9AKR1ElOSll7yw7e1kftynN39Q321etvwbLZcXon6zz0suE=
+    #- secure: RGovyUnMw3fp/bHZi058JvANT1rYmNqrsuSYew0cIgirO6YbMHr/rsjwCm1FTYpBl8s1zgr+u2b8ftYnfnCz2YT+Aip4NWrVYpVU0FEmfytGILrnUS0pjlt8m7fU9AKR1ElOSll7yw7e1kftynN39Q321etvwbLZcXon6zz0suE=
 
 jobs:
     fast_finish: true
@@ -148,13 +148,9 @@ before_script:
     
   # Install signing cert into OSX keychain
   - if [[ "${SPEC}" = "macx-clang" && "${TRAVIS_PULL_REQUEST}" = "false" ]]; then
-        export CODESIGN=codesign;
+        export CODESIGN=nocodesign;
     fi
-  - if [[ "${SPEC}" = "macx-clang" && "${TRAVIS_PULL_REQUEST}" = "false" ]]; then
-        openssl aes-256-cbc -K $MAC_CERT_KEY -iv $MAC_CERT_IV -in deploy/MacCertificates.p12.enc -out deploy/MacCertificates.p12 -d;
-    fi
-  - if [[ "${SPEC}" = "macx-clang" && "${TRAVIS_PULL_REQUEST}" = "false" ]]; then
-        source deploy/MacImportCert.sh;
+
     fi
 
 script:
