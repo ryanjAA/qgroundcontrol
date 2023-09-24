@@ -1,4 +1,4 @@
-# if you update this file, please consider updating Vagrantfile too
+# if you update this file, please consider updating Vagrantfile too - CHECK TRAVIS
 
 language: cpp
 
