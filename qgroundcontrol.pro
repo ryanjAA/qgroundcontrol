@@ -1553,33 +1553,4 @@ LinuxBuild {
     INSTALLS += target share_qgroundcontrol share_icons share_metainfo share_applications
 }
 
-macx: LIBS += -L$$PWD/../../../../../usr/local/Cellar/gstreamer/1.20.3/lib/ -lgstnet-1.0.0
 
-INCLUDEPATH += $$PWD/../../../../../usr/local/Cellar/gstreamer/1.20.3/include
-DEPENDPATH += $$PWD/../../../../../usr/local/Cellar/gstreamer/1.20.3/include
-
-macx: LIBS += -L$$PWD/../../../../../usr/local/Cellar/gstreamer/1.20.3/lib/ -lgstaudio-1.0.0
-
-INCLUDEPATH += $$PWD/../../../../../usr/local/Cellar/gstreamer/1.20.3/include
-DEPENDPATH += $$PWD/../../../../../usr/local/Cellar/gstreamer/1.20.3/include
-
-
-macx: LIBS += -L$$PWD/../../../../../Library/Frameworks/GStreamer.framework/Versions/1.0/lib/ -lgstvulkan-1.0.0
-
-INCLUDEPATH += $$PWD/../../../../../Library/Frameworks/GStreamer.framework/Versions/1.0/include
-DEPENDPATH += $$PWD/../../../../../Library/Frameworks/GStreamer.framework/Versions/1.0/include
-
-macx: LIBS += -L$$PWD/../../../../../Library/Frameworks/GStreamer.framework/Versions/1.0/lib/ -lgstbadaudio-1.0.0
-
-INCLUDEPATH += $$PWD/../../../../../Library/Frameworks/GStreamer.framework/Versions/1.0/include
-DEPENDPATH += $$PWD/../../../../../Library/Frameworks/GStreamer.framework/Versions/1.0/include
-
-macx: LIBS += -L$$PWD/../../../../../Library/Frameworks/GStreamer.framework/Versions/1.0/lib/ -lgsttranscoder-1.0.0
-
-INCLUDEPATH += $$PWD/../../../../../Library/Frameworks/GStreamer.framework/Versions/1.0/include
-DEPENDPATH += $$PWD/../../../../../Library/Frameworks/GStreamer.framework/Versions/1.0/include
-
-macx: LIBS += -L$$PWD/../../../Downloads/MoltenVK/MoltenVK/dylib/macOS/ -lMoltenVK
-
-INCLUDEPATH += $$PWD/../../../Downloads/MoltenVK/MoltenVK/dylib/macOS
-DEPENDPATH += $$PWD/../../../Downloads/MoltenVK/MoltenVK/dylib/macOS
