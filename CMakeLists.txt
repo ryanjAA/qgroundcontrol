@@ -6,6 +6,8 @@ include(GNUInstallDirs)
 
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug;Release;RelWithDebInfo;MinSizeRel;Coverage")
 
+add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
