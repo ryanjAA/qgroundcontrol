@@ -12,6 +12,8 @@ QMAKE_PROJECT_DEPTH = 0 # undocumented qmake flag to force absolute paths in mak
 QMAKE_CXXFLAGS += -Wno-deprecated
 QMAKE_CXXFLAGS_DEBUG += -Wno-deprecated
 QMAKE_CXXFLAGS_RELEASE += -Wno-deprecated
+QMAKE_CXXFLAGS_DEBUG += -Wno-deprecated-declarations
+QMAKE_CXXFLAGS_RELEASE += -Wno-deprecated-declarations
  
 # These are disabled until proven correct
 DEFINES+=DISABLE_VIDEOSTREAMING
