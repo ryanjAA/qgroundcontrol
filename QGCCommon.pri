@@ -83,6 +83,7 @@ linux {
         DEFINES += QGC_GST_TAISYNC_ENABLED
         DEFINES += QGC_GST_MICROHARD_ENABLED 
         QMAKE_CFLAGS -= -Zc:strictStrings
+        QMAKE_CXXFLAGS += -Wno-deprecated
         QMAKE_CFLAGS_RELEASE -= -Zc:strictStrings
         QMAKE_CFLAGS_RELEASE_WITH_DEBUGINFO -= -Zc:strictStrings
         QMAKE_CXXFLAGS -= -Zc:strictStrings
@@ -305,6 +306,7 @@ ReleaseBuild {
 
         # Enable function level linking and enhanced optimized debugging
         QMAKE_CFLAGS_RELEASE   += /Gy /Zo
+        QMAKE_CXXFLAGS += -Wno-deprecated
         QMAKE_CXXFLAGS_RELEASE += /Gy /Zo
         QMAKE_CFLAGS_RELEASE_WITH_DEBUGINFO   += /Gy /Zo
         QMAKE_CXXFLAGS_RELEASE_WITH_DEBUGINFO += /Gy /Zo
