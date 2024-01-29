@@ -761,6 +761,13 @@ Rectangle {
                                     visible:    QGroundControl.corePlugin.showAdvancedUI //AA
                                     property Fact _remoteIDEnable: QGroundControl.settingsManager.remoteIDSettings.enable
                                 }
+                                // Check box to show/hide RC RSSI at top of window
+                                FactCheckBox {
+                                    text:       qsTr("Show RC RSSI Indicator")
+                                    fact:       QGroundControl.settingsManager.appSettings.showRcRssiIndicator
+                                    visible:    true
+                                    //property //AA added this for RC RSSI
+                                }
                             }
                         }
 
