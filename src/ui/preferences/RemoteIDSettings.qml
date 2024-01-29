@@ -760,6 +760,8 @@ Rectangle {
                     text:               qsTr("Operator ID")
                     Layout.alignment:   Qt.AlignHCenter
                     font.pointSize:     ScreenTools.mediumFontPointSize
+                    visible:            false       //AA added to hide Operator ID (not needed for US flights use)
+
                 }
 
                 Rectangle {
@@ -768,6 +770,7 @@ Rectangle {
                     Layout.preferredWidth:  operatorIDGrid.width + (_margins * 2)
                     color:                  qgcPal.windowShade
                     Layout.fillWidth:       true
+                    visible:            false       //AA added to hide Operator ID (not needed for US flights use)
 
                     border.width:   _borderWidth
                     border.color:   (_regionOperation == RemoteIDSettings.RegionOperation.EU || QGroundControl.settingsManager.remoteIDSettings.sendOperatorID.value) ?
