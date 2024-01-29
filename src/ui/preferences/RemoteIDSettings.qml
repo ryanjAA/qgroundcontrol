@@ -855,6 +855,7 @@ Rectangle {
                     Layout.preferredHeight: selfIDGrid.height + selfIDnote.height + (_margins * 3)
                     Layout.preferredWidth:  selfIDGrid.width + (_margins * 2)
                     color:                  qgcPal.windowShade
+
                     visible:                true
                     Layout.fillWidth:       true
 
@@ -888,6 +889,9 @@ Rectangle {
                             fact:               getSelfIDFact()
                             Layout.fillWidth:   true
                             maximumLength:      23 // Maximum defined by Mavlink definition of OPEN_DRONE_ID_SELF_ID message
+                            text: (selfIDComboBox.currentIndex === 0) ? "Normal Operations" :
+                                      (selfIDComboBox.currentIndex === 1) ? "Emergency" : ""        //AA added this for defualt outputs
+
                         }
 
                         QGCLabel {
