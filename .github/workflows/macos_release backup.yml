@@ -27,18 +27,8 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2
-        with:
-          create-symlink: true
-          key: ${{ runner.os }}-Release
-          restore-keys: ${{ runner.os }}-Release
-          max-size: "2G"
-          append-timestamp: false
-        if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+      - name: Checkout submodules
+        run: git submodule update --init --recursive
 
       - name: Get all tags for correct version determination
         working-directory:  ${{ github.workspace }}
@@ -62,6 +52,16 @@ jobs:
             for package in *.pkg ;
               do sudo installer -verbose -pkg "$package" -target /
             done
+
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          create-symlink: true
+          key: ${{ runner.os }}-Release
+          restore-keys: ${{ runner.os }}-Release
+          max-size: "2G"
+          append-timestamp: false
+        if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
 
       - name: Create build directory
         run:  mkdir ${{ runner.temp }}/shadow_build_dir
