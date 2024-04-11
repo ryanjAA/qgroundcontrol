@@ -346,6 +346,7 @@ Rectangle {
                     text:               qsTr("Region")
                     Layout.alignment:   Qt.AlignHCenter
                     font.pointSize:     ScreenTools.mediumFontPointSize
+                    visible:            false       //AA Added to not show
                 }
 
                 Rectangle {
@@ -353,8 +354,9 @@ Rectangle {
                     Layout.preferredHeight: regionGrid.height + (_margins * 2)
                     Layout.preferredWidth:  regionGrid.width + (_margins * 2)
                     color:                  qgcPal.windowShade
-                    visible:                true
+                    visible:                false //AA changed to not show
                     Layout.fillWidth:       true
+
 
                     GridLayout {
                         id:                         regionGrid
@@ -364,6 +366,7 @@ Rectangle {
                         columns:                    2
                         rowSpacing:                 _margins * 3
                         columnSpacing:              _margins * 2
+                        visible:            false
 
                         QGCLabel {
                             text:               QGroundControl.settingsManager.remoteIDSettings.region.shortDescription
@@ -668,6 +671,7 @@ Rectangle {
                     text:               qsTr("BASIC ID")
                     Layout.alignment:   Qt.AlignHCenter
                     font.pointSize:     ScreenTools.mediumFontPointSize
+                    visible:            false //AA added
                 }
 
                 Rectangle {
@@ -676,6 +680,7 @@ Rectangle {
                     Layout.preferredWidth:  basicIDGrid.width  + basicIDnote.width  + (_margins * 2)
                     color:                  qgcPal.windowShade
                     Layout.fillWidth:       true
+                    visible:            false //AA added
 
                     border.width:   _borderWidth
                     border.color:   _activeRID ? (_activeVehicle.remoteIDManager.basicIDGood ? color : qgcPal.colorRed) : color
@@ -687,10 +692,11 @@ Rectangle {
                         anchors.horizontalCenter:   parent.horizontalCenter
                         anchors.bottomMargin:       _margins * 2
                         width:                      basicIDGrid.width
-                        text:                       qsTr("Note: This parameter is optional if Basic ID is already set on RID device. " +
-                                                         "On that case, this one will be registered as Basic ID 2")
+                        text:                       qsTr("Note: This parameter is hardcoded on your Remote ID device. " +
+                                                         "If something else is entered, it will be registered as Basic ID 2")
                         wrapMode:                   Text.Wrap
-                        visible:                    QGroundControl.settingsManager.remoteIDSettings.basicIDType.visible
+                        //visible:                    QGroundControl.settingsManager.remoteIDSettings.basicIDType.visible
+                        visible:            false //AA added
 
                     }
                     
@@ -705,24 +711,28 @@ Rectangle {
 
                         QGCLabel {
                             text:               QGroundControl.settingsManager.remoteIDSettings.basicIDType.shortDescription
-                            visible:            QGroundControl.settingsManager.remoteIDSettings.basicIDType.visible
+                            //visible:            QGroundControl.settingsManager.remoteIDSettings.basicIDType.visible
+                            visible:            false //AA added
                             Layout.fillWidth:   true
                         }
                         FactComboBox {
                             fact:               QGroundControl.settingsManager.remoteIDSettings.basicIDType
-                            visible:            QGroundControl.settingsManager.remoteIDSettings.basicIDType.visible
+                            //visible:            QGroundControl.settingsManager.remoteIDSettings.basicIDType.visible
+                            visible:            false //AA added
                             Layout.fillWidth:   true
                             sizeToContents:     true
                         }
 
                         QGCLabel {
                             text:               QGroundControl.settingsManager.remoteIDSettings.basicIDUaType.shortDescription
-                            visible:            QGroundControl.settingsManager.remoteIDSettings.basicIDUaType.visible
+                            //visible:            QGroundControl.settingsManager.remoteIDSettings.basicIDUaType.visible
+                            visible:            false //AA added
                             Layout.fillWidth:   true
                         }
                         FactComboBox {
                             fact:               QGroundControl.settingsManager.remoteIDSettings.basicIDUaType
-                            visible:            QGroundControl.settingsManager.remoteIDSettings.basicIDUaType.visible
+                            //visible:            QGroundControl.settingsManager.remoteIDSettings.basicIDUaType.visible
+                            visible:            false //AA added
                             Layout.fillWidth:   true
                             sizeToContents:     true
                         }
@@ -731,24 +741,28 @@ Rectangle {
                             text:               _activeRID && _activeVehicle.remoteIDManager.basicIDGood ?
                                                 QGroundControl.settingsManager.remoteIDSettings.basicID.shortDescription :
                                                 QGroundControl.settingsManager.remoteIDSettings.basicID.shortDescription + qsTr(" (Mandatory)")
-                            visible:            QGroundControl.settingsManager.remoteIDSettings.basicID.visible
+                            //visible:            QGroundControl.settingsManager.remoteIDSettings.basicID.visible
+                            visible:            false //AA added
                             Layout.alignment:   Qt.AlignHCenter
                             Layout.fillWidth:   true
                         }
                         FactTextField {
                             fact:               QGroundControl.settingsManager.remoteIDSettings.basicID
-                            visible:            QGroundControl.settingsManager.remoteIDSettings.basicID.visible
+                            //visible:            QGroundControl.settingsManager.remoteIDSettings.basicID.visible
+                            visible:            false //AA added
                             Layout.fillWidth:   true
                         }
 
                         QGCLabel {
                             text:               QGroundControl.settingsManager.remoteIDSettings.sendBasicID.shortDescription
                             Layout.fillWidth:   true
-                            visible:            QGroundControl.settingsManager.remoteIDSettings.basicID.visible
+                            //visible:            QGroundControl.settingsManager.remoteIDSettings.basicID.visible
+                            visible:            false //AA added
                         }
                         FactCheckBox {
                             fact:       QGroundControl.settingsManager.remoteIDSettings.sendBasicID
-                            visible:    QGroundControl.settingsManager.remoteIDSettings.basicID.visible
+                            //visible:    QGroundControl.settingsManager.remoteIDSettings.basicID.visible
+                            visible:            false //AA added
                         }
                     }
                 }
@@ -851,6 +865,7 @@ Rectangle {
                     text:               qsTr("Self ID")
                     Layout.alignment:   Qt.AlignHCenter
                     font.pointSize:     ScreenTools.mediumFontPointSize
+                    visible:            false //AA added
                 }
 
                 Rectangle {
@@ -859,7 +874,8 @@ Rectangle {
                     Layout.preferredWidth:  selfIDGrid.width + (_margins * 2)
                     color:                  qgcPal.windowShade
 
-                    visible:                true
+                    //visible:                true
+                    visible:            false //AA added
                     Layout.fillWidth:       true
 
                     GridLayout {
@@ -873,13 +889,15 @@ Rectangle {
 
                         QGCLabel {
                             text:               QGroundControl.settingsManager.remoteIDSettings.selfIDType.shortDescription
-                            visible:            QGroundControl.settingsManager.remoteIDSettings.selfIDType.visible
+                            //visible:            QGroundControl.settingsManager.remoteIDSettings.selfIDType.visible
+                            visible:            false //AA added
                             Layout.fillWidth:   true
                         }
                         FactComboBox {
                             id:                 selfIDComboBox
                             fact:               QGroundControl.settingsManager.remoteIDSettings.selfIDType
-                            visible:            QGroundControl.settingsManager.remoteIDSettings.selfIDType.visible
+                            //visible:            QGroundControl.settingsManager.remoteIDSettings.selfIDType.visible
+                            visible:            false //AA added
                             Layout.fillWidth:   true
                             sizeToContents:     true
                         }
@@ -892,7 +910,7 @@ Rectangle {
                             fact:               getSelfIDFact()
                             Layout.fillWidth:   true
                             maximumLength:      23 // Maximum defined by Mavlink definition of OPEN_DRONE_ID_SELF_ID message
-                            text: (selfIDComboBox.currentIndex === 0) ? "Normal Operations" :
+                            text: (selfIDComboBox.currentIndex === 0) ? "Normal" :
                                       (selfIDComboBox.currentIndex === 1) ? "Emergency" : ""        //AA added this for defualt outputs
 
                         }
@@ -903,7 +921,8 @@ Rectangle {
                         }
                         FactCheckBox {
                             fact:       QGroundControl.settingsManager.remoteIDSettings.sendSelfID
-                            visible:    QGroundControl.settingsManager.remoteIDSettings.sendSelfID.visible
+                            //visible:    QGroundControl.settingsManager.remoteIDSettings.sendSelfID.visible
+                            visible:            false //AA added
                         }
                     }
                         
@@ -919,7 +938,8 @@ Rectangle {
                                                          The message for each kind of selfID is saved and preserves reboots. Select " +
                                                          "each type on the Self ID type dropdown to configure the message to be sent")
                         wrapMode:                   Text.Wrap
-                        visible:                    QGroundControl.settingsManager.remoteIDSettings.selfIDType.visible
+                        //visible:                    QGroundControl.settingsManager.remoteIDSettings.selfIDType.visible
+                        visible:                    false
                     }
                 }
                 // -----------------------------------------------------------------------------------------
