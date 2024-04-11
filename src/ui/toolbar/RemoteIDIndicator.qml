@@ -123,7 +123,7 @@ Item {
 
                 QGCLabel {
                     id:                         remoteIDLabel
-                    text:                       qsTr("RemoteID Status")
+                    text:                       qsTr("Remote ID Status")
                     font.family:                ScreenTools.demiboldFontFamily
                     anchors.horizontalCenter:   parent.horizontalCenter
                 }
