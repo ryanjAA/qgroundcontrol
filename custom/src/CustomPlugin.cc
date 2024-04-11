@@ -116,10 +116,10 @@ CustomPlugin::settingsPages()
         _addSettingsEntry(tr("General"),     "qrc:/qml/GeneralSettings.qml",     "qrc:/res/gear-white.svg");
         _addSettingsEntry(tr("High-Speed Link"),  "qrc:/qml/MicrohardSettings.qml",        "qrc:/res/waves.svg"); //AA - added MH microhard
         _addSettingsEntry(tr("Comm Links"),  "qrc:/qml/LinkSettings.qml",        "qrc:/res/waves.svg");
-        //_addSettingsEntry(tr("Remote ID"),  "qrc:/qml/RemoteIDSettings.qml",      "qrc:/res/waves.svg");
-        if (qgcApp()->toolbox()->settingsManager()->remoteIDSettings()->enable()->rawValue().toBool()) {
-            _addSettingsEntry(tr("Remote ID"), "qrc:/qml/RemoteIDSettings.qml", "qrc:/res/waves.svg");
-        } //AA Added. Remote ID only shows not when checkbox is enabled which is only possible when in advanced mode.
+        _addSettingsEntry(tr("Remote ID"),  "qrc:/qml/RemoteIDSettings.qml",      "qrc:/res/waves.svg");
+        //if (qgcApp()->toolbox()->settingsManager()->remoteIDSettings()->enable()->rawValue().toBool()) {
+          //  _addSettingsEntry(tr("Remote ID"), "qrc:/qml/RemoteIDSettings.qml", "qrc:/res/waves.svg");
+        //} //AA Added. Remote ID only shows not when checkbox is enabled which is only possible when in advanced mode. - This is what makes it on advanced mode only but not keepin it on
         _addSettingsEntry(tr("Offline Maps"),"qrc:/qml/OfflineMap.qml",          "qrc:/res/waves.svg");
         _addSettingsEntry(tr("MAVLink"),     "qrc:/qml/MavlinkSettings.qml",     "qrc:/res/waves.svg");
         _addSettingsEntry(tr("Console"),     "qrc:/qml/QGroundControl/Controls/AppMessages.qml");

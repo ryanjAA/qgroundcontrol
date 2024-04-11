@@ -757,8 +757,8 @@ Rectangle {
                                 FactCheckBox {
                                     text:       qsTr("Enable Remote ID")
                                     fact:       _remoteIDEnable
-                                    //visible:    _remoteIDEnable.visible //AA chaged
-                                    visible:    QGroundControl.corePlugin.showAdvancedUI //AA
+                                    visible:    _remoteIDEnable.visible //AA changed
+                                    //visible:    QGroundControl.corePlugin.showAdvancedUI //AA  - Although now needs to always be on
                                     property Fact _remoteIDEnable: QGroundControl.settingsManager.remoteIDSettings.enable
                                 }
                                 // Check box to show/hide RC RSSI at top of window
