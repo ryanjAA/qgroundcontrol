@@ -28,7 +28,7 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-        name: Checkout submodules
+      - name: Checkout submodules
         run: git submodule update --init --recursive
 
 
@@ -99,7 +99,10 @@ jobs:
 
       - name: Create AppImage
         working-directory:  ${{ runner.temp }}/shadow_build_dir
-        run:                ${SOURCE_DIR}/deploy/create_linux_appimage.sh ${SOURCE_DIR} ./staging ./package;
+        #run:                ${SOURCE_DIR}/deploy/create_linux_appimage.sh ${SOURCE_DIR} ./staging ./package;
+        run:                ${SOURCE_DIR}/deploy/create_linux_appimage.sh ${SOURCE_DIR} ${SOURCE_DIR}/staging ${SOURCE_DIR}/package
+        shell:              /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+
 
       - name: Save artifact
         uses: actions/upload-artifact@master
