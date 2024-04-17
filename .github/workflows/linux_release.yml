@@ -3,8 +3,7 @@ name: Linux Release
 on:
   push:
     branches:
-      - 'master'
-      - 'Stable*'
+      - 'AAGS-4.3.0-2.0.4'
     tags:
       - 'v*'
   pull_request:
@@ -18,18 +17,19 @@ defaults:
 env:
   SOURCE_DIR:   ${{ github.workspace }}
   QT_VERSION:   5.15.2
-  ARTIFACT:     QGroundControl.AppImage
+  ARTIFACT:     AAGS.AppImage
   BUILD_TYPE:   ${{ fromJSON('["DailyBuild", "StableBuild"]')[ github.ref_type == 'tag' || contains(github.ref, 'Stable_' ) ] }}
 
 jobs:
   build:
-    runs-on:  ubuntu-20.04
+    #runs-on:  ubuntu-20.04
+    runs-on: self-hosted
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
-        with:
-          submodules: recursive
+        uses: actions/checkout@v4
+        name: Checkout submodules
+        run: git submodule update --init --recursive
 
       - name: Get all tags for correct version determination
         working-directory:  ${{ github.workspace }}
@@ -106,7 +106,7 @@ jobs:
         run: |
               aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
               aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-              aws s3 cp ${ARTIFACT} s3://qgroundcontrol/builds/${{ github.ref_name }}/${ARTIFACT} --region us-west-2 --acl public-read
+              aws s3 cp ${ARTIFACT} s3://aags/builds/${{ github.ref_name }}/${ARTIFACT} --region us-west-2 --acl public-read
 
       - name: Upload tagged stable build to S3 latest Bucket
         if:                 github.event_name == 'push' && github.ref_type == 'tag'
@@ -114,4 +114,4 @@ jobs:
         run: |
               aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
               aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-              aws s3 cp ${ARTIFACT} s3://qgroundcontrol/latest/${ARTIFACT} --region us-west-2 --acl public-read
+              aws s3 cp ${ARTIFACT} s3://aags/latest/${ARTIFACT} --region us-west-2 --acl public-read
