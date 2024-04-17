@@ -22,7 +22,8 @@ env:
 
 jobs:
   build:
-    runs-on:  windows-2019
+    #runs-on:  windows-2019
+    runs-on: self-hosted
 
     steps:
       - name: Checkout repo
