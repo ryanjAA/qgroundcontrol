@@ -31,6 +31,13 @@ jobs:
         name: Checkout submodules
         run: git submodule update --init --recursive
 
+
+      - name: Setup Directories
+        run: |
+          mkdir -p ${{ env.SOURCE_DIR }}/staging
+          mkdir -p ${{ env.SOURCE_DIR }}/package
+        shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+      
       - name: Get all tags for correct version determination
         working-directory:  ${{ github.workspace }}
         run: |
