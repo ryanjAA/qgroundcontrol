@@ -3,7 +3,8 @@ name: Linux Release
 on:
   push:
     branches:
-      - 'AAGS-4.3.0-2.0.4'
+      #- 'AAGS-4.3.0-2.0.4'
+       - 'main'
     tags:
       - 'v*'
   pull_request:
