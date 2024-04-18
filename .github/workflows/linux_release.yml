@@ -101,8 +101,8 @@ jobs:
       - name: Create AppImage
         working-directory:  ${{ runner.temp }}/shadow_build_dir
         #run:                ${SOURCE_DIR}/deploy/create_linux_appimage.sh ${SOURCE_DIR} ./staging ./package;
-        run:                ${SOURCE_DIR}/deploy/create_linux_appimage.sh ${SOURCE_DIR} ${SOURCE_DIR}/staging ${SOURCE_DIR}/package
-        shell:              /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+        run:                ${SOURCE_DIR}/deploy/create_linux_appimage.sh ~/src/github/actions-runner/_work/qgroundcontrol/qgroundcontrol/staging ~/src/github/actions-runner/_work/qgroundcontrol/qgroundcontrol/package
+  
 
 
       - name: Save artifact
