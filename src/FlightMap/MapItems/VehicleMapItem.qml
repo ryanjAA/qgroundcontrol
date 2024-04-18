@@ -77,17 +77,56 @@ MapQuickItem {
 
         QGCMapLabel {
             id:                         vehicleLabel
-            anchors.top:                parent.bottom
-            anchors.horizontalCenter:   parent.horizontalCenter
-            map:                        _map
-            text:                       vehicleLabelText
-            font.pointSize:             _adsbVehicle ? ScreenTools.defaultFontPointSize : ScreenTools.smallFontPointSize
-            visible:                    _adsbVehicle ? !isNaN(altitude) : _multiVehicle
-            property string vehicleLabelText: visible ?
-                                                  (_adsbVehicle ?
-                                                       QGroundControl.unitsConversion.metersToAppSettingsHorizontalDistanceUnits(altitude).toFixed(0) + " " + QGroundControl.unitsConversion.appSettingsHorizontalDistanceUnitsString + "\n" + callsign :
-                                                       (_multiVehicle ? qsTr("Vehicle %1").arg(vehicle.id) : "")) :
-                                                  ""
+                              anchors.top:                parent.bottom
+                              anchors.horizontalCenter:   parent.horizontalCenter
+                              map:                        _map
+                              text:                       vehicleLabelText()
+                              font.pointSize:             _adsbVehicle ? ScreenTools.defaultFontPointSize : ScreenTools.smallFontPointSize
+                              visible:                    _adsbVehicle ? !isNaN(altitude) : _multiVehicle
+                              function vehicleLabelText() {
+                                  // Base label text with altitude for ADS-B vehicles
+                                  if (_adsbVehicle) {
+                                      var labelText = "Alt: " + (isNaN(altitude) ? "N/A" : QGroundControl.unitsConversion.metersToAppSettingsHorizontalDistanceUnits(altitude).toFixed(0) + " " + QGroundControl.unitsConversion.appSettingsHorizontalDistanceUnitsString);
+
+                                      // Add the horizontal distance only if the active vehicle and its coordinate are available
+                                      if (_activeVehicle && _activeVehicle.coordinate) {
+                                          labelText += "\nHor: " + getDistanceToActiveVehicle(coordinate, _activeVehicle.coordinate);
+                                      }
+
+                                      // Add the vertical distance only if the active vehicle and its AMSL altitude are available
+                                      if (_activeVehicle && _activeVehicle.altitudeAMSL && !isNaN(_activeVehicle.altitudeAMSL.rawValue)) {
+                                          var verticalDistanceMeters = Math.abs(altitude - _activeVehicle.altitudeAMSL.rawValue);
+                                          var verticalDistanceInPreferredUnits = QGroundControl.unitsConversion.metersToAppSettingsHorizontalDistanceUnits(verticalDistanceMeters).toFixed(0);
+                                          labelText += "\nVer: " + verticalDistanceInPreferredUnits + " " + QGroundControl.unitsConversion.appSettingsHorizontalDistanceUnitsString;
+                                      }
+
+                                      // Append the callsign at the end, ensuring it's displayed even if there's no active vehicle
+                                      labelText += "\nCS: " + (callsign ? callsign : "N/A");
+
+                                      return labelText;
+                                  } else if (_multiVehicle) {
+                                      // For non-ADS-B vehicles when multiple vehicles are present
+                                        return qsTr("Vehicle %1").arg(vehicle.id ? vehicle.id : "N/A");
+                                  }
+
+                                  // Default return if none of the above conditions are met
+                                    return "N/A";
+                              }
+
+
+                      function getDistanceToActiveVehicle(adsbCoord, activeCoord) {
+                          var distanceMeters = adsbCoord.distanceTo(activeCoord); // Calculate distance in meters
+                          var distanceMiles = distanceMeters / 1609.34; // Convert meters to miles
+
+                          if (distanceMiles < 2) {
+                              // Display in feet if less than 2 miles
+                              var distanceFeet = distanceMiles * 5280; // Convert miles to feet
+                              return distanceFeet.toFixed(0) + " ft";
+                          } else {
+                              // Display in miles if 2 miles or more
+                              return distanceMiles.toFixed(1) + " mi";
+                          }
+                      }
 
         }
     }
