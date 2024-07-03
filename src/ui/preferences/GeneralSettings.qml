@@ -36,6 +36,9 @@ Rectangle {
     property Fact _userBrandImageOutdoor:               QGroundControl.settingsManager.brandImageSettings.userBrandImageOutdoor
     property Fact _virtualJoystick:                     QGroundControl.settingsManager.appSettings.virtualJoystick
     property Fact _virtualJoystickAutoCenterThrottle:   QGroundControl.settingsManager.appSettings.virtualJoystickAutoCenterThrottle
+    property Fact _fadeMargin:                          QGroundControl.settingsManager.appSettings.fadeMargin  
+    property Fact _maxSensitivity:                      QGroundControl.settingsManager.appSettings.maxSensitivity
+
 
     property real   _labelWidth:                ScreenTools.defaultFontPixelWidth * 20
     property real   _comboFieldWidth:           ScreenTools.defaultFontPixelWidth * 30
@@ -796,6 +799,41 @@ Rectangle {
                                     selectFolder:   true
                                     onAcceptedForLoad: _savePath.rawValue = file
                                 }
+                            }
+                        }
+                    }
+
+                    Item { width: 1; height: _margins; visible: advancedTelemetrySectionLabel.visible }
+                    QGCLabel {
+                        id: advancedTelemetrySectionLabel
+                        text: qsTr("Advanced Telemetry Settings")
+                        visible: true
+                    }
+                    Rectangle {
+                        Layout.preferredHeight: advancedTelemetryGrid.height + (_margins * 2)
+                        Layout.preferredWidth: advancedTelemetryGrid.width + (_margins * 2)
+                        color: qgcPal.windowShade
+                        visible: advancedTelemetrySectionLabel.visible
+                        Layout.fillWidth: true
+                        radius: 10
+
+                        GridLayout {
+                            id: advancedTelemetryGrid
+                            anchors.margins: _margins
+                            anchors.top: parent.top
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            columns: 2
+
+                            QGCLabel { text: qsTr("Fade Margin (dB)") }
+                            FactTextField {
+                                Layout.preferredWidth: _valueFieldWidth
+                                fact: _fadeMargin
+                            }
+
+                            QGCLabel { text: qsTr("Max Sensitivity (dBm)") }
+                            FactTextField {
+                                Layout.preferredWidth: _valueFieldWidth
+                                fact: _maxSensitivity
                             }
                         }
                     }

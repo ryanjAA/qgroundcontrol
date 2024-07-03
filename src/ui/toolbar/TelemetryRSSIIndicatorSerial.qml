@@ -15,6 +15,8 @@ import QGroundControl.Controls              1.0
 import QGroundControl.MultiVehicleManager   1.0
 import QGroundControl.ScreenTools           1.0
 import QGroundControl.Palette               1.0
+import QGroundControl.SettingsManager       1.0
+
 
 //-------------------------------------------------------------------------
 //-- Telemetry RSSI
@@ -25,10 +27,29 @@ Item {
     width:          telemIcon.width * 1.1
 
     property bool showIndicator: true               ///AA make peristent
-    ///property bool showIndicator: _hasTelemetry
-
     property var  _activeVehicle:   QGroundControl.multiVehicleManager.activeVehicle
     property bool _hasTelemetry:    _activeVehicle ? _activeVehicle.telemetryLRSSI !== 0 : false
+    property var _fadeMargin: QGroundControl.settingsManager.appSettings.fadeMargin
+    property var _maxSensitivity: QGroundControl.settingsManager.appSettings.maxSensitivity
+
+        Component.onCompleted: {
+            console.log("Fade Margin: ", _fadeMargin.value)
+            console.log("Max Sensitivity: ", _maxSensitivity.value)
+        }
+
+        function rssiToPercentage(rssi) {
+            var minRssi = _maxSensitivity.value + _fadeMargin.value;
+            var maxRssi = -43.5; // Full signal dBm
+
+            if (rssi < minRssi) {
+                return 0;
+            } else if (rssi > maxRssi) {
+                return 100;
+            } else {
+                return Math.round(((rssi - minRssi) / (maxRssi - minRssi)) * 100);
+            }
+        }
+
 
     Component {
         id: telemRSSIInfo
@@ -58,12 +79,11 @@ Item {
                     anchors.horizontalCenter: parent.horizontalCenter
                     //QGCLabel { text: qsTr("Uplink RSSI:") }  ///AA change to Microhard Telem - Note for Elsight/Halo
                     QGCLabel { text: qsTr("Local RSSI:") }
-                    QGCLabel { text: _activeVehicle.telemetryLRSSI + " dBm"}
-                    //QGCLabel { text: QGroundControl.microhardManager.linkConnected && QGroundControl.microhardManager.uplinkRSSI < 0 ? QGroundControl.microhardManager.uplinkRSSI + " dBm": "Disconnected"}
-                    //QGCLabel { text: qsTr("Downlink RSSI:") }
-                    //QGCLabel { text: QGroundControl.microhardManager.linkConnected && QGroundControl.microhardManager.downlinkRSSI < 0 ? QGroundControl.microhardManager.downlinkRSSI + " dBm": "Disconnected"}
+//                    QGCLabel { text: _activeVehicle.telemetryLRSSI + " dBm"}
+                    QGCLabel { text: _activeVehicle.telemetryLRSSI + " dBm (" + _root.rssiToPercentage(_activeVehicle.telemetryLRSSI) + "%)" }
                     QGCLabel { text: qsTr("Remote RSSI:") }
-                    QGCLabel { text: _activeVehicle.telemetryRRSSI + " dBm"}
+                    //QGCLabel { text: _activeVehicle.telemetryRRSSI + " dBm"}
+                    QGCLabel { text: _activeVehicle.telemetryRRSSI + " dBm (" + _root.rssiToPercentage(_activeVehicle.telemetryRRSSI) + "%)" }
                     QGCLabel { text: qsTr("RX Errors:") }
                     QGCLabel { text: _activeVehicle.telemetryRXErrors }
                     QGCLabel { text: qsTr("Errors Fixed:") }

@@ -347,6 +347,24 @@
     "shortDescription": "Show RC RSSI Indicator",
     "longDescription": "Enable or disable the RC RSSI Indicator in the Fly View.",
     "defaultValue": true
+},
+{
+            "name": "fadeMargin",
+            "shortDesc": "Fade Margin",
+            "type": "int16",
+            "units": "dB",
+            "default": 10.0,
+            "min": 0.0,
+            "max": 50.0
+},
+{
+            "name": "maxSensitivity",
+            "shortDesc": "Max Sensitivity",
+            "type": "int16",
+            "units": "dBm",
+            "default": -105.0,
+            "min": -200,
+            "max": 0.0
 }
 ]
 }

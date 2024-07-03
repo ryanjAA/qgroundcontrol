@@ -59,6 +59,7 @@ DECLARE_SETTINGGROUP(App, "")
     qmlRegisterUncreatableType<AppSettings>("QGroundControl.SettingsManager", 1, 0, "AppSettings", "Reference only");
     QGCPalette::setGlobalTheme(indoorPalette()->rawValue().toBool() ? QGCPalette::Dark : QGCPalette::Light);
 
+
     QSettings settings;
 
     // These two "type" keys were changed to "class" values
@@ -129,6 +130,7 @@ DECLARE_SETTINGGROUP(App, "")
     connect(savePathFact, &Fact::rawValueChanged, this, &AppSettings::_checkSavePathDirectories);
 
     _checkSavePathDirectories();
+
 }
 
 DECLARE_SETTINGSFACT(AppSettings, offlineEditingFirmwareClass)
@@ -172,6 +174,9 @@ DECLARE_SETTINGSFACT(AppSettings, forwardMavlink)
 DECLARE_SETTINGSFACT(AppSettings, forwardMavlinkHostName)
 DECLARE_SETTINGSFACT(AppSettings, forwardMavlinkAPMSupportHostName)
 DECLARE_SETTINGSFACT(AppSettings, showRcRssiIndicator)  //AA ADDED FOR RC RSSI
+DECLARE_SETTINGSFACT(AppSettings, fadeMargin) //AA added for telem percentage and settable sensitivity
+DECLARE_SETTINGSFACT(AppSettings, maxSensitivity) //AA added for telem percentage and settable sensitivitys
+
 
 DECLARE_SETTINGSFACT_NO_FUNC(AppSettings, indoorPalette)
 {

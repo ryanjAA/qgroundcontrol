@@ -68,6 +68,9 @@ public:
     DEFINE_SETTINGFACT(forwardMavlinkHostName)
     DEFINE_SETTINGFACT(forwardMavlinkAPMSupportHostName)
     DEFINE_SETTINGFACT(showRcRssiIndicator) //AA added for RC RSSI Toggle
+    DEFINE_SETTINGFACT(fadeMargin)
+    DEFINE_SETTINGFACT(maxSensitivity)
+
 
 
     // Although this is a global setting it only affects ArduPilot vehicle since PX4 automatically starts the stream from the vehicle side
