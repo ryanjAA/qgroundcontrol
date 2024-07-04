@@ -37,6 +37,25 @@ Item {
             console.log("Max Sensitivity: ", _maxSensitivity.value)
         }
 
+        //AA - RSSI Log Formula
+        function rssiToPercentage(rssi) {
+            var minRssi = _maxSensitivity.value + _fadeMargin.value;
+            var maxRssi = -43.5; // Assuming 100% signal strength at -43.5 dBm
+
+            if (rssi < minRssi) {
+                return 0;
+            } else if (rssi > maxRssi) {
+                return 100;
+            } else {
+                // Adjustd the interpolation to emphasize the logarithmic perception
+                var adjustedMinRssi = Math.log10(minRssi - _maxSensitivity.value + 1);
+                var adjustedMaxRssi = Math.log10(maxRssi - _maxSensitivity.value + 1);
+                var adjustedRssi = Math.log10(rssi - _maxSensitivity.value + 1);
+                return Math.round(((adjustedRssi - adjustedMinRssi) / (adjustedMaxRssi - adjustedMinRssi)) * 100);
+            }
+        }
+
+        /* AA - RSSI Linear Formula - Using Log one instead but keeping in-case we want to switch later on
         function rssiToPercentage(rssi) {
             var minRssi = _maxSensitivity.value + _fadeMargin.value;
             var maxRssi = -43.5; // Full signal dBm
@@ -49,7 +68,7 @@ Item {
                 return Math.round(((rssi - minRssi) / (maxRssi - minRssi)) * 100);
             }
         }
-
+*/
 
     Component {
         id: telemRSSIInfo
