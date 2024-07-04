@@ -233,6 +233,33 @@ Rectangle {
                                 property Fact _enableCustomActions: QGroundControl.settingsManager.flyViewSettings.enableCustomActions
                             }
 
+                            GridLayout {
+                                                            columns: 2
+                                                            Layout.columnSpan:  2
+
+                                                        QGCLabel {
+                                                            text: qsTr("Flight Path Line Duration ")
+                                                            visible: QGroundControl.settingsManager.flyViewSettings.trajectoryLineDuration.visible
+                                                            Layout.fillWidth: false
+                                                        }
+
+                                                        FactComboBox {
+                                                            id: trajectoryDurationComboBox
+                                                            Layout.fillWidth: false
+                                                            fact: QGroundControl.settingsManager.flyViewSettings.trajectoryLineDuration
+                                                                                            model: ListModel {
+                                                                                                ListElement { text: qsTr("Keep Forever");}
+                                                                                                ListElement { text: qsTr("15 seconds");}
+                                                                                                ListElement { text: qsTr("30 seconds");}
+                                                                                                ListElement { text: qsTr("1 minute");}
+                                                                                                ListElement { text: qsTr("2 minutes");}
+                                                                                                ListElement { text: qsTr("5 minutes");}
+                                                            }
+                                                            textRole: "text"
+                                                        }
+                                                    }
+
+
                             //-----------------------------------------------------------------
                             //-- CustomAction definition path
                             GridLayout {

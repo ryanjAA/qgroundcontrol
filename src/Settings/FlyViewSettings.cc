@@ -12,7 +12,11 @@
 #include <QQmlEngine>
 #include <QtQml>
 
+FlyViewSettings::~FlyViewSettings() {
+}
+
 DECLARE_SETTINGGROUP(FlyView, "FlyView")
+
 {
     qmlRegisterUncreatableType<FlyViewSettings>("QGroundControl.SettingsManager", 1, 0, "FlyViewSettings", "Reference only"); \
 }
@@ -31,4 +35,5 @@ DECLARE_SETTINGSFACT(FlyViewSettings, showObstacleDistanceOverlay)
 DECLARE_SETTINGSFACT(FlyViewSettings, updateHomePosition)
 DECLARE_SETTINGSFACT(FlyViewSettings, enableCustomActions)
 DECLARE_SETTINGSFACT(FlyViewSettings, customActionDefinitions)
+DECLARE_SETTINGSFACT(FlyViewSettings, trajectoryLineDuration)
 

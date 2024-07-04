@@ -31,6 +31,8 @@ FlightMap {
     zoomLevel:                  QGroundControl.flightMapZoom
     center:                     QGroundControl.flightMapPosition
 
+    property var pointTimestamps: []
+
     property Item pipState: _pipState
     QGCPipState {
         id:         _pipState
@@ -270,11 +272,46 @@ FlightMap {
         }
 
         Connections {
-            target:                 _activeVehicle ? _activeVehicle.trajectoryPoints : null
-            onPointAdded:           trajectoryPolyline.addCoordinate(coordinate)
-            onUpdateLastPoint:      trajectoryPolyline.replaceCoordinate(trajectoryPolyline.pathLength() - 1, coordinate)
-            onPointsCleared:        trajectoryPolyline.path = []
-        }
+            target: _activeVehicle ? _activeVehicle.trajectoryPoints : null
+                        onPointAdded: {
+                            trajectoryPolyline.addCoordinate(coordinate);
+                            trajectoryPolyline.visible = true;
+                            var currentTime = Date.now();
+                            pointTimestamps.push(currentTime);
+
+                        }
+                        onUpdateLastPoint: trajectoryPolyline.replaceCoordinate(trajectoryPolyline.pathLength() - 1, coordinate)
+                        onPointsCleared: {
+                            trajectoryPolyline.path = [];
+                            pointTimestamps = [];
+                        }
+                    }
+                    Timer {
+                        id: cleanupTimer
+                        interval: 5000 // Every 5 seconds
+                        repeat: true
+                        running: true
+                        onTriggered: {
+                            var currentTime = Date.now();
+                            var newPath = [];
+                            var newTimestamps = [];
+                            const indexToMilliseconds = [0, 15000, 30000, 60000, 120000, 300000];
+                                            var settingIndex = QGroundControl.settingsManager.flyViewSettings.trajectoryLineDuration.rawValue;
+                                            var durationFromSettings = settingIndex < indexToMilliseconds.length ? indexToMilliseconds[settingIndex] : 0;
+                                            console.log("Duration from settings in milliseconds:", durationFromSettings);
+
+                                            for (var i = 0; i < pointTimestamps.length; i++) {
+                                                // If duration is 0 (keep forever), skip the time check
+                                                // Otherwise, check if the point is within the retention period
+                                                if (durationFromSettings === 0 || currentTime - pointTimestamps[i] <= durationFromSettings) {
+                                                    newPath.push(trajectoryPolyline.path[i]);
+                                                    newTimestamps.push(pointTimestamps[i]);
+                                }
+                            }
+                                            trajectoryPolyline.path = newPath;
+                                                            pointTimestamps = newTimestamps;
+                                                        }
+                                                    }
     }
 
     // Add the vehicles to the map

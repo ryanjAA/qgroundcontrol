@@ -91,6 +91,12 @@
     "longDesc":  "File that defines custom actions to send connected vehicle",
     "type":      "string",
     "default":   ""
-}
+    },
+    {
+        "name":      "trajectoryLineDuration",
+        "shortDesc": "Trajectory Line Duration",
+        "type":      "double",
+        "default":   0
+    }
 ]
 }

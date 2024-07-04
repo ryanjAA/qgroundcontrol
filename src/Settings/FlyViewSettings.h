@@ -16,6 +16,7 @@ class FlyViewSettings : public SettingsGroup
     Q_OBJECT
 public:
     FlyViewSettings(QObject* parent = nullptr);
+    virtual ~FlyViewSettings();
 
     DEFINE_SETTING_NAME_GROUP()
 
@@ -33,4 +34,5 @@ public:
     DEFINE_SETTINGFACT(updateHomePosition)
     DEFINE_SETTINGFACT(enableCustomActions)
     DEFINE_SETTINGFACT(customActionDefinitions)
+    DEFINE_SETTINGFACT(trajectoryLineDuration)
 };
