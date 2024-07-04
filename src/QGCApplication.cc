@@ -136,7 +136,7 @@
 #include "QGCMapEngine.h"
 
 /* Applied Aeronautics Version Number */
-#define AA_VERSION "v2.0.4-430-RID"
+#define AA_VERSION "v2.0.4b-430-RID"
 
 class FinishVideoInitialization : public QRunnable
 {
