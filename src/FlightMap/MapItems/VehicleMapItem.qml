@@ -38,6 +38,12 @@ MapQuickItem {
     property var    _map:           map
     property bool   _multiVehicle:  QGroundControl.multiVehicleManager.vehicles.count > 1
 
+    function isSpecialCallsign(callsign) {
+            if (!callsign) return false;
+            var normalizedCallsign = callsign.toString().trim().toUpperCase();
+            return normalizedCallsign.startsWith("TEST") || normalizedCallsign.startsWith("RID-"); //AA - Adjust "Callsign" as needed
+        }
+
     sourceItem: Item {
         id:         vehicleItem
         width:      vehicleIcon.width
@@ -63,7 +69,10 @@ MapQuickItem {
         }
         Image {
             id:                 vehicleIcon
-            source:             _adsbVehicle ? (alert ? "/qmlimages/AlertAircraft.svg" : "/qmlimages/AwarenessAircraft.svg") : vehicle.vehicleImageOpaque
+            source:             _adsbVehicle ? (callsign.startsWith("TEST") ? "/qmlimages/RID.svg" :
+                                (callsign.startsWith("RID-") ? "/qmlimages/RID.svg" :
+                                (alert ? "/qmlimages/AlertAircraft.svg" : "/qmlimages/AwarenessAircraft.svg"))) :
+                                vehicle.vehicleImageOpaque
             mipmap:             true
             width:              _root.size
             sourceSize.width:   _root.size
