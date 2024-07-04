@@ -38,6 +38,8 @@ Rectangle {
     property Fact _virtualJoystickAutoCenterThrottle:   QGroundControl.settingsManager.appSettings.virtualJoystickAutoCenterThrottle
     property Fact _fadeMargin:                          QGroundControl.settingsManager.appSettings.fadeMargin  
     property Fact _maxSensitivity:                      QGroundControl.settingsManager.appSettings.maxSensitivity
+    property Fact _rssiWarning:                         QGroundControl.settingsManager.appSettings.rssiWarning
+    property Fact _rssiAlert:                           QGroundControl.settingsManager.appSettings.rssiAlert
 
 
     property real   _labelWidth:                ScreenTools.defaultFontPixelWidth * 20
@@ -49,6 +51,7 @@ Rectangle {
     property real   _panelWidth:                _root.width * _internalWidthRatio
     property real   _margins:                   ScreenTools.defaultFontPixelWidth
     property var    _planViewSettings:          QGroundControl.settingsManager.planViewSettings
+    property var    _appliedaeroSettings:       QGroundControl.settingsManager.appliedaeroSettings
     property var    _flyViewSettings:           QGroundControl.settingsManager.flyViewSettings
     property var    _videoSettings:             QGroundControl.settingsManager.videoSettings
     property string _videoSource:               _videoSettings.videoSource.rawValue
@@ -869,6 +872,20 @@ Rectangle {
                             FactTextField {
                                 Layout.preferredWidth: _valueFieldWidth
                                 fact: _maxSensitivity
+                            }
+                            QGCLabel {
+                                text:       qsTr("RSSI warning level")
+                            }
+                            FactTextField {
+                                Layout.preferredWidth:  _valueFieldWidth
+                                fact: _rssiWarning
+                            }
+                            QGCLabel {
+                                text:       qsTr("RSSI alert level")
+                            }
+                            FactTextField {
+                                Layout.preferredWidth:  _valueFieldWidth
+                                fact: _rssiAlert
                             }
                         }
                     }

@@ -175,7 +175,9 @@ DECLARE_SETTINGSFACT(AppSettings, forwardMavlinkHostName)
 DECLARE_SETTINGSFACT(AppSettings, forwardMavlinkAPMSupportHostName)
 DECLARE_SETTINGSFACT(AppSettings, showRcRssiIndicator)  //AA ADDED FOR RC RSSI
 DECLARE_SETTINGSFACT(AppSettings, fadeMargin) //AA added for telem percentage and settable sensitivity
-DECLARE_SETTINGSFACT(AppSettings, maxSensitivity) //AA added for telem percentage and settable sensitivitys
+DECLARE_SETTINGSFACT(AppSettings, maxSensitivity) //AA added for telem percentage and settable sensitivity
+DECLARE_SETTINGSFACT(AppSettings, rssiWarning) //AA
+DECLARE_SETTINGSFACT(AppSettings, rssiAlert) //AA
 
 
 DECLARE_SETTINGSFACT_NO_FUNC(AppSettings, indoorPalette)

@@ -70,6 +70,8 @@ public:
     DEFINE_SETTINGFACT(showRcRssiIndicator) //AA added for RC RSSI Toggle
     DEFINE_SETTINGFACT(fadeMargin)
     DEFINE_SETTINGFACT(maxSensitivity)
+    DEFINE_SETTINGFACT(rssiWarning)
+    DEFINE_SETTINGFACT(rssiAlert)
 
 
 
