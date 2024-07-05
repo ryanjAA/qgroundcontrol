@@ -298,7 +298,7 @@ FlightMap {
                             const indexToMilliseconds = [0, 15000, 30000, 60000, 120000, 300000];
                                             var settingIndex = QGroundControl.settingsManager.flyViewSettings.trajectoryLineDuration.rawValue;
                                             var durationFromSettings = settingIndex < indexToMilliseconds.length ? indexToMilliseconds[settingIndex] : 0;
-                                            console.log("Duration from settings in milliseconds:", durationFromSettings);
+                                            #console.log("Duration from settings in milliseconds:", durationFromSettings);
 
                                             for (var i = 0; i < pointTimestamps.length; i++) {
                                                 // If duration is 0 (keep forever), skip the time check
