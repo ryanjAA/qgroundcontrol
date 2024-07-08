@@ -353,7 +353,7 @@
             "shortDesc": "Fade Margin",
             "type": "int16",
             "units": "dB",
-            "default": 10.0,
+            "default": 5.0,
             "min": 0.0,
             "max": 50.0
 },

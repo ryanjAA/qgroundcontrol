@@ -63,7 +63,8 @@ Item {
         //AA - RSSI Log Formula
         function rssiToPercentage(rssi) {
             var minRssi = _maxSensitivity.value + _fadeMargin.value;
-            var maxRssi = -43.5; // Assuming 100% signal strength at -43.5 dBm
+            //var maxRssi = -24.5; // Assuming 100% signal strength at -24.5 dBm (aka 255/2-152 (but if 217 than its 43.5)
+            var maxRssi = -45; // Assuming 100% signal strength at -45 dBm (aka 214/2-152 whih aligns with RFD support).
 
             if (rssi < minRssi) {
                 return 0;
