@@ -178,6 +178,8 @@ DECLARE_SETTINGSFACT(AppSettings, fadeMargin) //AA added for telem percentage an
 DECLARE_SETTINGSFACT(AppSettings, maxSensitivity) //AA added for telem percentage and settable sensitivity
 DECLARE_SETTINGSFACT(AppSettings, rssiWarning) //AA
 DECLARE_SETTINGSFACT(AppSettings, rssiAlert) //AA
+DECLARE_SETTINGSFACT(AppSettings, rcRSSIWarning) //AA
+DECLARE_SETTINGSFACT(AppSettings, rcRSSIAlert) //AA
 
 
 DECLARE_SETTINGSFACT_NO_FUNC(AppSettings, indoorPalette)

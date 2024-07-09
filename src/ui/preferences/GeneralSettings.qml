@@ -40,6 +40,8 @@ Rectangle {
     property Fact _maxSensitivity:                      QGroundControl.settingsManager.appSettings.maxSensitivity
     property Fact _rssiWarning:                         QGroundControl.settingsManager.appSettings.rssiWarning
     property Fact _rssiAlert:                           QGroundControl.settingsManager.appSettings.rssiAlert
+    property Fact _rcRSSIWarning:                       QGroundControl.settingsManager.appSettings.rcRSSIWarning
+    property Fact _rcRSSIAlert:                         QGroundControl.settingsManager.appSettings.rcRSSIAlert
 
 
     property real   _labelWidth:                ScreenTools.defaultFontPixelWidth * 20
@@ -894,6 +896,43 @@ Rectangle {
                             FactTextField {
                                 Layout.preferredWidth:  _valueFieldWidth
                                 fact: _rssiAlert
+                            }
+                        }
+                    }
+                    Item { width: 1; height: _margins; visible: advancedRCSectionLabel.visible }
+                    QGCLabel {
+                        id: advancedRCSectionLabel
+                        text: qsTr("Advanced RC Display Settings")
+                        visible: true
+                    }
+                    Rectangle {
+                        Layout.preferredHeight: advancedRCGrid.height + (_margins * 2)
+                        Layout.preferredWidth: advancedRCGrid.width + (_margins * 2)
+                        color: qgcPal.windowShade
+                        visible: advancedRCSectionLabel.visible
+                        Layout.fillWidth: true
+                        radius: 10
+
+                        GridLayout {
+                            id: advancedRCGrid
+                            anchors.margins: _margins
+                            anchors.top: parent.top
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            columns: 2
+
+                            QGCLabel {
+                                text:       qsTr("RC RSSI warning level")
+                            }
+                            FactTextField {
+                                Layout.preferredWidth:  _valueFieldWidth
+                                fact: _rcRSSIWarning
+                            }
+                            QGCLabel {
+                                text:       qsTr("RC RSSI alert level")
+                            }
+                            FactTextField {
+                                Layout.preferredWidth:  _valueFieldWidth
+                                fact: _rcRSSIAlert
                             }
                         }
                     }

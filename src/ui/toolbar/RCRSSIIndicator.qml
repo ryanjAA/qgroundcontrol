@@ -38,6 +38,29 @@ Item {
       //  console.log("showIndicator changed:", showIndicator);
     //}
 
+    property var _rcRSSIWarning:  QGroundControl.settingsManager.appSettings.rcRSSIWarning
+    property var _rcRSSIAlert:  QGroundControl.settingsManager.appSettings.rcRSSIAlert
+    property bool _rcpulser: false // Switches on/off at 1Hz, used to flash rssi icon on alert
+
+    function linkColor() {
+        if (!_activeVehicle || _activeVehicle.rcRSSI > 100) {
+            // -1 is used for invalid/missing data,
+            // and positive numbers are not expected/valid here,
+            // so for these numbers we use the default/old color.
+            return qgcPal.buttonText;
+        } else if (_activeVehicle.rcRSSI > _rcRSSIWarning.rawValue) {
+            return qgcPal.colorGreen;
+        } else if (_activeVehicle.rcRSSI > _rcRSSIAlert.rawValue) {
+            return qgcPal.colorOrange;
+        } else {
+            return _rcpulser ? qgcPal.colorRed : qgcPal.buttonText;
+        }
+    }
+
+    Timer {
+        interval: 500; running: true; repeat: true
+        onTriggered: _rcpulser = !_rcpulser
+    }
 
     Component {
         id: rcRSSIInfo
@@ -58,7 +81,7 @@ Item {
 
                 QGCLabel {
                     id:             rssiLabel
-                    text:           _activeVehicle ? (_activeVehicle.rcRSSI !== 255 ? qsTr("RC RSSI Status") : qsTr("RC RSSI Data Unavailable")) : qsTr("N/A", "No data available")
+                    text:           _activeVehicle ? (_activeVehicle.rcRSSI !== 255 ? qsTr("RC Signal Strength Status") : qsTr("RC Signal Strength Unavailable")) : qsTr("N/A", "No data available")
                     font.family:    ScreenTools.demiboldFontFamily
                     anchors.horizontalCenter: parent.horizontalCenter
                 }
@@ -93,7 +116,8 @@ Item {
             source:             "/qmlimages/RC.svg"
             fillMode:           Image.PreserveAspectFit
             opacity:            _rcRSSIAvailable ? 1 : 0.5
-            color:              qgcPal.buttonText
+            //color:              qgcPal.buttonText
+            color:              linkColor()
         }
 
         SignalStrength {

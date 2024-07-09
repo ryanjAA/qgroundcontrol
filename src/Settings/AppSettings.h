@@ -68,10 +68,12 @@ public:
     DEFINE_SETTINGFACT(forwardMavlinkHostName)
     DEFINE_SETTINGFACT(forwardMavlinkAPMSupportHostName)
     DEFINE_SETTINGFACT(showRcRssiIndicator) //AA added for RC RSSI Toggle
-    DEFINE_SETTINGFACT(fadeMargin)
-    DEFINE_SETTINGFACT(maxSensitivity)
-    DEFINE_SETTINGFACT(rssiWarning)
-    DEFINE_SETTINGFACT(rssiAlert)
+    DEFINE_SETTINGFACT(fadeMargin)//AA added for Telem scaling
+    DEFINE_SETTINGFACT(maxSensitivity)//AA added for Telem scaling
+    DEFINE_SETTINGFACT(rssiWarning)//AA added for Telem color based changes
+    DEFINE_SETTINGFACT(rssiAlert)//AA added for Telem color based changes
+    DEFINE_SETTINGFACT(rcRSSIWarning)//AA added for RC color based changes
+    DEFINE_SETTINGFACT(rcRSSIAlert)//AA added for RC color based changes
 
 
 
