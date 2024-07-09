@@ -387,7 +387,7 @@
             {
                 "name":         "rcRSSIWarning",
                 "shortDesc":    "RC RSSI below this value will trigger a warning",
-                "type":         "double",
+                "type":         "uint8",
                 "default":      50,
                 "units":        "%",
                 "min":          0.0,
@@ -396,7 +396,7 @@
             {
                 "name":         "rcRSSIAlert",
                 "shortDesc":    "RC RSSI below this value will trigger an alert",
-                "type":         "double",
+                "type":         "uint8",
                 "default":      25,
                 "units":        "%",
                 "min":          0.0,
