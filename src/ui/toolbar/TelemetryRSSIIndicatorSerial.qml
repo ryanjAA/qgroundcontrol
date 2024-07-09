@@ -55,10 +55,10 @@ Item {
             onTriggered: _pulser = !_pulser
         }
 
-        Component.onCompleted: {
-            console.log("Fade Margin: ", _fadeMargin.value)
-            console.log("Max Sensitivity: ", _maxSensitivity.value)
-        }
+        //Component.onCompleted: {  //AA For debugging
+          //  console.log("Fade Margin: ", _fadeMargin.value)
+            //console.log("Max Sensitivity: ", _maxSensitivity.value)
+        //}
 
         //AA - RSSI Log Formula
         function rssiToPercentage(rssi) {

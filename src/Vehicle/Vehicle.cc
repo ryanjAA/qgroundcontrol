@@ -1843,8 +1843,8 @@ void Vehicle::_handleRadioStatus(mavlink_message_t& message)
          */
         //rssi    = qMin(qMax(qRound(static_cast<qreal>(rssi)    / 1.9 - 127.0), - 120), 0);
         //remrssi = qMin(qMax(qRound(static_cast<qreal>(remrssi) / 1.9 - 127.0), - 120), 0);
-        rssi    = qMin(qMax(qRound(static_cast<qreal>(rssi)    / 2 - 152.0), - 120), 0);
-        remrssi = qMin(qMax(qRound(static_cast<qreal>(remrssi) / 2 - 152.0), - 120), 0);
+        rssi    = qMin(qMax(qRound(static_cast<qreal>(rssi)    / 2 - 152.0), - 120), 100);
+        remrssi = qMin(qMax(qRound(static_cast<qreal>(remrssi) / 2 - 152.0), - 120), 100);
     } else {
         rssi    = (int)(int8_t)rstatus.rssi;
         remrssi = (int)(int8_t)rstatus.remrssi;
