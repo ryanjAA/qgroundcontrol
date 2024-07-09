@@ -343,10 +343,10 @@
 },
 {
     "name": "showRcRssiIndicator",
-    "type": "bool",
     "shortDescription": "Show RC RSSI Indicator",
     "longDescription": "Enable or disable the RC RSSI Indicator in the Fly View.",
-    "defaultValue": true
+    "type":             "bool",
+    "default":     true
 },
 {
             "name": "fadeMargin",

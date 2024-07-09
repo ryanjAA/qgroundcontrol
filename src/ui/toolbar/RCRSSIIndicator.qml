@@ -25,7 +25,8 @@ Item {
     anchors.bottom: parent.bottom
 
     //property bool showIndicator: _activeVehicle.supportsRadio && _rcRSSIAvailable
-    property bool showIndicator: _activeVehicle && QGroundControl.settingsManager.appSettings.showRcRssiIndicator.rawValue //AA RC RSSI - Only if checkbox is enabled
+    property bool showIndicator: _activeVehicle.supportsRadio && QGroundControl.settingsManager.appSettings.showRcRssiIndicator.rawValue //AA RC RSSI - Only if checkbox is enabled
+
 
 
 
@@ -33,7 +34,9 @@ Item {
     property bool   _rcRSSIAvailable:   _activeVehicle ? _activeVehicle.rcRSSI > 0 && _activeVehicle.rcRSSI <= 100 : false
     //property bool   _rcRSSIAvailable:   _activeVehicle ? _activeVehicle.rcRSSI > 0 && _activeVehicle.rcRSSI <= 1000 : false //AA for testing
 
-
+    //onShowIndicatorChanged: {
+      //  console.log("showIndicator changed:", showIndicator);
+    //}
 
 
     Component {
@@ -80,6 +83,7 @@ Item {
         anchors.top:    parent.top
         anchors.bottom: parent.bottom
         spacing:        ScreenTools.defaultFontPixelWidth
+        visible:        showIndicator // Show or hide based on the checkbox
 
         QGCColoredImage {
             width:              height
