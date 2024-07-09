@@ -48,7 +48,7 @@ Item {
         fillMode:           Image.PreserveAspectFit
         anchors.fill:       parent
         //color:              qgcPal.buttonText
-        color:              linkColor()
+        color:              linkColor()     //AA change for RC color model
         sourceSize.height:  size
     }
 }
