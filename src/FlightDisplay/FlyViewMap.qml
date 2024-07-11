@@ -344,6 +344,7 @@ FlightMap {
             callsign:       object.callsign
             heading:        object.heading
             alert:          object.alert
+            emitterType:    object.emitterType
             map:            _root
             size:           pipMode ? ScreenTools.defaultFontPixelHeight : ScreenTools.defaultFontPixelHeight * 2.5
             z:              QGroundControl.zOrderVehicles

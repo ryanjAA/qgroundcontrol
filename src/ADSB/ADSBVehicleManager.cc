@@ -18,6 +18,7 @@
 ADSBVehicleManager::ADSBVehicleManager(QGCApplication* app, QGCToolbox* toolbox)
     : QGCTool(app, toolbox)
 {
+    qmlRegisterUncreatableType<ADSBVehicle>("QGroundControl.ADSBVehicle",1, 0, "ADSBVehicle","Reference only");
 }
 
 void ADSBVehicleManager::setToolbox(QGCToolbox* toolbox)

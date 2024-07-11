@@ -31,6 +31,12 @@ void ADSBVehicle::update(const ADSBVehicleInfo_t & vehicleInfo)
         qCWarning(ADSBVehicleManagerLog) << "ICAO address mismatch expected:actual" << _icaoAddress << vehicleInfo.icaoAddress;
         return;
     }
+
+    if (vehicleInfo.emitterType != _emitterType) {
+        _emitterType = vehicleInfo.emitterType;
+        emit emitterTypeChanged();
+    }
+
     //qCDebug(ADSBVehicleManagerLog) << "Updating" << QStringLiteral("%1 Flags: %2").arg(vehicleInfo.icaoAddress, 0, 16).arg(vehicleInfo.availableFlags, 0, 2);
 
     if (vehicleInfo.availableFlags & CallsignAvailable) {

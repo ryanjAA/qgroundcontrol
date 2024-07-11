@@ -47,6 +47,10 @@
         <file alias="AirframeSimulation.png">src/AutoPilotPlugins/Common/Images/AirframeSimulation.svg</file>
         <file alias="AirframeStandardPlane.png">src/AutoPilotPlugins/Common/Images/Plane.svg</file>
         <file alias="AlertAircraft.svg">src/FlightMap/Images/AlertAircraft.svg</file>
+        <file alias="AlertDrone.svg">src/FlightMap/Images/AlertDrone.svg</file>
+        <file alias="AlertHeli.svg">src/FlightMap/Images/AlertHeli.svg</file>
+        <file alias="AlertPara.svg">src/FlightMap/Images/AlertPara.svg</file>
+        <file alias="AlertUnknown.svg">src/FlightMap/Images/AlertUnknown.svg</file>
         <file alias="Analyze.svg">src/ui/toolbar/Images/Analyze.svg</file>
         <file alias="APM/BrandImage">src/FirmwarePlugin/APM/APMBrandImage.png</file>
         <file alias="APM/BrandImageSub">src/FirmwarePlugin/APM/APMBrandImageSub.png</file>
@@ -60,6 +64,10 @@
         <file alias="attitudeInstrument.svg">src/FlightMap/Images/attitudeInstrument.svg</file>
         <file alias="attitudePointer.svg">src/FlightMap/Images/attitudePointer.svg</file>
         <file alias="AwarenessAircraft.svg">src/FlightMap/Images/AwarenessAircraft.svg</file>
+        <file alias="AwarenessDrone.svg">src/FlightMap/Images/AwarenessDrone.svg</file>
+        <file alias="AwarenessHeli.svg">src/FlightMap/Images/AwarenessHeli.svg</file>
+        <file alias="AwarenessPara.svg">src/FlightMap/Images/AwarenessPara.svg</file>
+        <file alias="AwarenessUnknown.svg">src/FlightMap/Images/AwarenessUnknown.svg</file>
         <file alias="Battery.svg">src/ui/toolbar/Images/Battery.svg</file>
         <file alias="camera.svg">resources/camera.svg</file>
         <file alias="camera_photo.svg">src/Camera/images/camera_photo.svg</file>
