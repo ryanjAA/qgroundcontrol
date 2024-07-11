@@ -34,5 +34,11 @@ public:
     DEFINE_SETTINGFACT(updateHomePosition)
     DEFINE_SETTINGFACT(enableCustomActions)
     DEFINE_SETTINGFACT(customActionDefinitions)
-    DEFINE_SETTINGFACT(trajectoryLineDuration)
+    DEFINE_SETTINGFACT(trajectoryLineDuration) //AA Added
+    DEFINE_SETTINGFACT(showMannedTrafficIndicators) //AA Added
+    DEFINE_SETTINGFACT(horizontalMannedConflictDistance) //AA Added
+    DEFINE_SETTINGFACT(verticalMannedConflictDistance) //AA Added
+    DEFINE_SETTINGFACT(showUASTrafficIndicators) //AA Added
+    DEFINE_SETTINGFACT(horizontalUASConflictDistance) //AA Added
+    DEFINE_SETTINGFACT(verticalUASConflictDistance) //AA Added
 };

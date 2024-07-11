@@ -97,6 +97,56 @@
         "shortDesc": "Trajectory Line Duration",
         "type":      "double",
         "default":   0
+    },
+    {
+        "name":             "showUASTrafficIndicators",
+        "shortDesc": "Show UAS traffic indicators",
+        "longDesc":  "Shows UAS traffic indicators, including conflict radius and line guides",
+        "type":             "bool",
+        "default":     true
+    },
+    {
+        "name":             "horizontalUASConflictDistance",
+        "shortDesc": "Horizontal U ASconflict distance",
+        "longDesc":  "The horizontal distance to nearby UAS traffic inside which the situation is considered a conflict, and traffic indicators turn red. Twice this distance is used for proximity detection, meaning that the indicators will turn yellow. ",
+        "type":             "uint32",
+        "min":              0,
+        "units":            "m",
+        "default":          30.48
+    },
+    {
+        "name":             "verticalUASConflictDistance",
+        "shortDesc": "Veritcal UAS conflict distance",
+        "longDesc":  "The vertical distance to nearby UAS traffic inside which the situation is considered a conflict, and traffic indicators turn red. Twice this distance is used for proximity detection, meaning that the indicators will turn yellow. ",
+        "type":             "uint32",
+        "min":              0,
+        "units":            "m",
+        "default":          7.62
+    },
+    {
+        "name":             "showMannedTrafficIndicators",
+        "shortDesc": "Show Manned traffic indicators",
+        "longDesc":  "Shows Manned traffic indicators, including conflict radius and line guides",
+        "type":             "bool",
+        "default":     true
+    },
+    {
+        "name":             "horizontalMannedConflictDistance",
+        "shortDesc": "Horizontal Manned conflict distance",
+        "longDesc":  "The horizontal distance to nearby manned traffic inside which the situation is considered a conflict, and traffic indicators turn red. Twice this distance is used for proximity detection, meaning that the indicators will turn yellow. ",
+        "type":             "uint32",
+        "min":              0,
+        "units":            "m",
+        "default":          609.6
+    },
+    {
+        "name":             "verticalMannedConflictDistance",
+        "shortDesc": "Veritcal Manned conflict distance",
+        "longDesc":  "The vertical distance to nearby manned traffic inside which the situation is considered a conflict, and traffic indicators turn red. Twice this distance is used for proximity detection, meaning that the indicators will turn yellow. ",
+        "type":             "uint32",
+        "min":              0,
+        "units":            "m",
+        "default":          76.2
     }
 ]
 }

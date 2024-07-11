@@ -851,6 +851,69 @@ Rectangle {
                         }
                     }
 
+                    Item { width: 1; height: _margins; visible: advancedCollisionSection.visible }
+                                       QGCLabel {
+                                           id:         advancedCollisionSection
+                                           text:       qsTr("Collision Indicators")
+                                           visible:    true
+                                       }
+                                       Rectangle {
+                                           id:                     advancedCollisionRect
+                                           Layout.preferredHeight: advancedCollision.height + (_margins * 2)
+                                           Layout.preferredWidth:  advancedCollision.width + (_margins * 2)
+                                           color:                  qgcPal.windowShade
+                                           Layout.fillWidth:       true
+                                           ColumnLayout {
+                                               id:                         advancedCollision
+                                               anchors.margins:            _margins
+                                               anchors.top:                parent.top
+                                               anchors.horizontalCenter:   parent.horizontalCenter
+                                               spacing:                    _margins
+                                               FactCheckBox {
+                                                   id:         promptShowMannedTrafficIndicators
+                                                   text:       qsTr("Show Manned Traffic Indicators")
+                                                   fact:       _flyViewSettings.showMannedTrafficIndicators
+                                               }
+                                               QGCLabel {
+                                                   text:       qsTr("Horizontal conflict distance (Manned)")
+                                               }
+                                               FactTextField {
+                                                   Layout.preferredWidth:  _valueFieldWidth
+                                                   enabled:                promptShowMannedTrafficIndicators.checked
+                                                   fact:                   _flyViewSettings.horizontalMannedConflictDistance
+                                               }
+                                               QGCLabel {
+                                                   text:       qsTr("Vertical conflict distance (Manned)")
+                                               }
+                                               FactTextField {
+                                                   Layout.preferredWidth:  _valueFieldWidth
+                                                   enabled:                promptShowMannedTrafficIndicators.checked
+                                                   fact:                   _flyViewSettings.verticalMannedConflictDistance
+                                               }
+                                               FactCheckBox {
+                                                   id:         promptShowUASTrafficIndicators
+                                                   text:       qsTr("Show UAS/RID Traffic Indicators")
+                                                   fact:       _flyViewSettings.showUASTrafficIndicators
+                                               }
+                                               QGCLabel {
+                                                   text:       qsTr("Horizontal conflict distance (UAS/RID)")
+                                               }
+                                               FactTextField {
+                                                   Layout.preferredWidth:  _valueFieldWidth
+                                                   enabled:                promptShowUASTrafficIndicators.checked
+                                                   fact:                   _flyViewSettings.horizontalUASConflictDistance
+                                               }
+                                               QGCLabel {
+                                                   text:       qsTr("Vertical conflict distance (UAS/RID)")
+                                               }
+                                               FactTextField {
+                                                   Layout.preferredWidth:  _valueFieldWidth
+                                                   enabled:                promptShowUASTrafficIndicators.checked
+                                                   fact:                   _flyViewSettings.verticalUASConflictDistance
+                                               }
+                                           }
+                                       }
+
                     Item { width: 1; height: _margins; visible: advancedTelemetrySectionLabel.visible }
                     QGCLabel {
                         id: advancedTelemetrySectionLabel

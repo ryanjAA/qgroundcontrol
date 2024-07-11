@@ -109,7 +109,7 @@ MapQuickItem {
                                 vehicle.vehicleImageOpaque //AA works for previous K75 testing
 
              */
-            source:             _adsbVehicle ? (callsign.startsWith("TEST") ? "/qmlimages/RID.svg" :
+            source:             _adsbVehicle ? (callsign.startsWith("TEST2") ? "/qmlimages/RID.svg" :
                                 (callsign.startsWith("RID-") ? "/qmlimages/RID.svg" :
                                 getAdsbIcon(emitterType, alert))) : vehicle.vehicleImageOpaque //AA ADSB cascading model, alter TEST if needed for specific tests.
             mipmap:             true

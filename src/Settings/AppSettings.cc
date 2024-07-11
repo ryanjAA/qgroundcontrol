@@ -182,6 +182,7 @@ DECLARE_SETTINGSFACT(AppSettings, rcRSSIWarning) //AA
 DECLARE_SETTINGSFACT(AppSettings, rcRSSIAlert) //AA
 
 
+
 DECLARE_SETTINGSFACT_NO_FUNC(AppSettings, indoorPalette)
 {
     if (!_indoorPaletteFact) {

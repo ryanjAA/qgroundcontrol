@@ -54,7 +54,17 @@ FlightMap {
     property real   _toolsMargin:               ScreenTools.defaultFontPixelWidth * 0.75
     property var    _flyViewSettings:           QGroundControl.settingsManager.flyViewSettings
     property bool   _keepMapCenteredOnVehicle:  _flyViewSettings.keepMapCenteredOnVehicle.rawValue
-    property bool   _showPositionSetpointLine:  _flyViewSettings.showPositionSetpointLine.rawValue
+    property bool   _showPositionSetpointLine:  _flyViewSettings.showPositionSetpointLine.rawValue  //AA Added - setpoint line
+
+
+    property bool   _showMannedTrafficIndicators:     _flyViewSettings.showMannedTrafficIndicators.rawValue  //AA Added - Manned
+    property var    _horizontalMannedConflictDistance: _flyViewSettings.horizontalMannedConflictDistance.value  //AA Added - Manned
+    property var    _verticalMannedConflictDistance:  _flyViewSettings.verticalMannedConflictDistance.value  //AA Added - Manned
+
+
+    property bool   _showUASTrafficIndicators:     _flyViewSettings.showUASTrafficIndicators.rawValue  //AA Added - UAS
+    property var    _horizontalUASConflictDistance: _flyViewSettings.horizontalUASConflictDistance.value  //AA Added - UAS
+    property var    _verticalUASConflictDistance:  _flyViewSettings.verticalUASConflictDistance.value  //AA Added - UAS
 
     property bool   _disableVehicleTracking:    false
     property bool   _keepVehicleCentered:       pipMode ? true : false
@@ -351,6 +361,108 @@ FlightMap {
         }
     }
 
+
+    // Add lines to ADSB vehicles to the map
+    MapItemView {
+        model: QGroundControl.adsbVehicleManager.adsbVehicles
+        delegate: MapPolyline {
+            visible: shouldShowTrafficIndicator(object) && get_proximity(object, _activeVehicle, getHorizontalConflictDistance(object) * 2, getVerticalConflictDistance(object) * 2)
+            line.width: get_line_width(object, _activeVehicle, getHorizontalConflictDistance(object), getVerticalConflictDistance(object))
+            line.color: get_line_color(object, _activeVehicle, getHorizontalConflictDistance(object), getVerticalConflictDistance(object))
+            z: QGroundControl.zOrderVehicles + 1
+            path: visible ? [object.coordinate, _activeVehicle.coordinate] : []
+
+            function get_proximity(adsbVehicle, mainVehicle, horizontal_radius, vertical_radius) {
+                if (!adsbVehicle || !adsbVehicle.coordinate.isValid || !mainVehicle || !mainVehicle.coordinate.isValid) {
+                    return false
+                }
+
+                var vertical_distance = 0
+                if (!isNaN(adsbVehicle.altitude)) {
+                    vertical_distance = Math.abs(adsbVehicle.altitude - mainVehicle.coordinate.altitude)
+                }
+                var horizontal_distance = adsbVehicle.coordinate.distanceTo(mainVehicle.coordinate)
+
+                //console.log("Vertical Distance: " + vertical_distance)
+                //console.log("Horizontal Distance: " + horizontal_distance)
+                //console.log("Vertical Radius: " + vertical_radius)
+                //console.log("Horizontal Radius: " + horizontal_radius)
+
+                return vertical_distance <= vertical_radius && horizontal_distance <= horizontal_radius
+            }
+
+            function isUAVorRID(adsbVehicle) {
+                if (!adsbVehicle || !adsbVehicle.emitterType || !adsbVehicle.callsign) {
+                    return false;
+                }
+                return adsbVehicle.emitterType === ADSBVehicle.EMITTER_TYPE_UAV || adsbVehicle.callsign.startsWith("RID-");
+            }
+
+            function shouldShowTrafficIndicator(adsbVehicle) {
+                if (isUAVorRID(adsbVehicle) && _showUASTrafficIndicators) {
+                    return true
+                }
+                if (!isUAVorRID(adsbVehicle) && _showMannedTrafficIndicators) {
+                    return true
+                }
+                return false
+            }
+
+            function getHorizontalConflictDistance(adsbVehicle) {
+                if (isUAVorRID(adsbVehicle)) {
+                    return getHorizontalUASConflictDistance()
+                }
+                return getHorizontalMannedConflictDistance()
+            }
+
+            function getVerticalConflictDistance(adsbVehicle) {
+                if (isUAVorRID(adsbVehicle)) {
+                    return getVerticalUASConflictDistance()
+                }
+                return getVerticalMannedConflictDistance()
+            }
+
+            function getHorizontalMannedConflictDistance() {
+                return _horizontalMannedConflictDistance
+            }
+
+            function getVerticalMannedConflictDistance() {
+                return _verticalMannedConflictDistance
+            }
+
+            function getHorizontalUASConflictDistance() {
+                return _horizontalUASConflictDistance
+            }
+
+            function getVerticalUASConflictDistance() {
+                return _verticalUASConflictDistance
+            }
+
+            function get_line_width(adsbVehicle, mainVehicle, horizontal_radius, vertical_radius) {
+                if (get_proximity(adsbVehicle, mainVehicle, horizontal_radius, vertical_radius)) {
+                    return 4
+                }
+                return 2
+            }
+
+            function get_line_color(adsbVehicle, mainVehicle, horizontal_radius, vertical_radius) {
+                var withinImmediateConflict = get_proximity(adsbVehicle, mainVehicle, horizontal_radius, vertical_radius)
+                var withinProximity = get_proximity(adsbVehicle, mainVehicle, horizontal_radius * 2, vertical_radius * 2)
+
+                if (withinImmediateConflict) {
+                    return "red"
+                } else if (withinProximity) {
+                    return "yellow"
+                } else {
+                    return "transparent" // This should not be visible
+                }
+            }
+        }
+    }
+
+
+
+
     // Add the items associated with each vehicles flight plan to the map
     Repeater {
         model: QGroundControl.multiVehicleManager.vehicles
@@ -385,6 +497,28 @@ FlightMap {
     CustomMapItems {
         map:            _root
         largeMapView:   !pipMode
+    }
+
+    // MapCircle for Manned Aircraft Conflict Distance //AA added
+    MapCircle {
+        color:          "transparent"
+        opacity:        1
+        border.color:   "red"
+        border.width:   4
+        radius:         _horizontalMannedConflictDistance
+        center:         _activeVehicleCoordinate
+        visible:        _showMannedTrafficIndicators
+    }
+
+    // MapCircle for UAS Conflict Distance      //AA added
+    MapCircle {
+        color:          "transparent"
+        opacity:        1
+        border.color:   "red"
+        border.width:   4
+        radius:         _horizontalUASConflictDistance
+        center:         _activeVehicleCoordinate
+        visible:        _showUASTrafficIndicators
     }
 
     GeoFenceMapVisuals {

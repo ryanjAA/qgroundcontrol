@@ -35,5 +35,10 @@ DECLARE_SETTINGSFACT(FlyViewSettings, showObstacleDistanceOverlay)
 DECLARE_SETTINGSFACT(FlyViewSettings, updateHomePosition)
 DECLARE_SETTINGSFACT(FlyViewSettings, enableCustomActions)
 DECLARE_SETTINGSFACT(FlyViewSettings, customActionDefinitions)
-DECLARE_SETTINGSFACT(FlyViewSettings, trajectoryLineDuration)
-
+DECLARE_SETTINGSFACT(FlyViewSettings, trajectoryLineDuration) //AA added
+DECLARE_SETTINGSFACT(FlyViewSettings, showMannedTrafficIndicators) //AA Added
+DECLARE_SETTINGSFACT(FlyViewSettings, horizontalMannedConflictDistance) //AA Added
+DECLARE_SETTINGSFACT(FlyViewSettings, verticalMannedConflictDistance) //AA Added
+DECLARE_SETTINGSFACT(FlyViewSettings, showUASTrafficIndicators) //AA Added
+DECLARE_SETTINGSFACT(FlyViewSettings, horizontalUASConflictDistance) //AA Added
+DECLARE_SETTINGSFACT(FlyViewSettings, verticalUASConflictDistance) //AA Added
