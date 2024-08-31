@@ -126,60 +126,85 @@ Item {
         anchors.leftMargin:     _margins
         anchors.left:           parent.left
         columnSpacing:          0
-        columns:                4
+        columns:                8
 
         GridLayout {
             columns:                8
             rowSpacing:             _rowSpacing
-            columnSpacing:          _labelToValueSpacing
+            columnSpacing:         _labelToValueSpacing
             Layout.alignment:       Qt.AlignVCenter | Qt.AlignHCenter
 
             QGCLabel {
                 text:               qsTr("Selected Waypoint")
-                Layout.columnSpan:  8
+                Layout.columnSpan:  4
                 font.pointSize:     ScreenTools.smallFontPointSize
+                Layout.row: 0
             }
 
-            QGCLabel { text: qsTr("Alt diff:"); font.pointSize: _dataFontSize; }
+
+            QGCLabel {
+                text: qsTr("Mission File:")
+                font.pointSize:     ScreenTools.smallFontPointSize
+                //color: "blue"
+                Layout.column: 4
+                Layout.row: 0
+            }
+
+            QGCLabel {
+                text: extractFileName(_planMasterController.currentPlanFile)
+                font.pointSize:     ScreenTools.smallFontPointSize
+                Layout.minimumWidth: _mediumValueWidth
+                //color: "red"
+                Layout.column: 5
+                Layout.row: 0
+
+                function extractFileName(fullPath) {
+                    const parts = fullPath.split('/');
+                    return parts.pop();
+                }
+            }
+
+            //QGCLabel { text: qsTr("Alt diff:"); font.pointSize: _dataFontSize; }
+            QGCLabel { text: qsTr("Alt diff:"); font.pointSize: _dataFontSize; Layout.row: 1; Layout.column: 0; }
             QGCLabel {
                 text:                   _altDifferenceText
                 font.pointSize:         _dataFontSize
                 Layout.minimumWidth:    _mediumValueWidth
+                Layout.row: 1;
+                Layout.column: 1;
             }
 
-            Item { width: 1; height: 1 }
-
-            QGCLabel { text: qsTr("Azimuth:"); font.pointSize: _dataFontSize; }
+            QGCLabel { text: qsTr("Azimuth:"); font.pointSize: _dataFontSize; Layout.row: 1; Layout.column: 2; }  // Remain in row 2, column 2
             QGCLabel {
                 text:                   _azimuthText
                 font.pointSize:         _dataFontSize
                 Layout.minimumWidth:    _smallValueWidth
+                Layout.row: 1; Layout.column: 3;  // Remain in row 2, column 3
             }
 
-            Item { width: 1; height: 1 }
-
-            QGCLabel { text: qsTr("Dist prev WP:"); font.pointSize: _dataFontSize; }
+            QGCLabel { text: qsTr("Dist prev WP:"); font.pointSize: _dataFontSize; Layout.row: 1; Layout.column: 4; }  // Remain in row 2, column 4
             QGCLabel {
                 text:                   _distanceText
                 font.pointSize:         _dataFontSize
                 Layout.minimumWidth:    _largeValueWidth
+                Layout.row: 1; Layout.column: 5;  // Remain in row 2, column 5
             }
 
-            QGCLabel { text: qsTr("Gradient:"); font.pointSize: _dataFontSize; }
+            QGCLabel { text: qsTr("Gradient:"); font.pointSize: _dataFontSize; Layout.row: 2; Layout.column: 0; }  // Move to row 3, column 0
             QGCLabel {
                 text:                   _gradientText
                 font.pointSize:         _dataFontSize
                 Layout.minimumWidth:    _mediumValueWidth
                 color:                  _gradient >= 8.5 || _gradient <= -5.7 ? "red": "white"  // AA added for flight planning. Set color to red if condition is met, else inherit
+                Layout.row: 2; Layout.column: 1;  // Move to row 3, column 1
             }
 
-            Item { width: 1; height: 1 }
-
-            QGCLabel { text: qsTr("Heading:"); font.pointSize: _dataFontSize; }
+            QGCLabel { text: qsTr("Heading:"); font.pointSize: _dataFontSize; Layout.row: 2; Layout.column: 2; }  // Move to row 3, column 2
             QGCLabel {
                 text:                   _headingText
                 font.pointSize:         _dataFontSize
                 Layout.minimumWidth:    _smallValueWidth
+                Layout.row: 2; Layout.column: 3;  // Move to row 3, column 3
             }
         }
 
@@ -325,4 +350,3 @@ Item {
         }
     }
 }
-
