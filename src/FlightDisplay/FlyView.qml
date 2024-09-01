@@ -182,7 +182,8 @@ Item {
            running: true
            repeat: true
            onTriggered: {
-               if (_activeVehicle && !suppressWarning) {
+               //if (_activeVehicle && !suppressWarning) {
+               if (_activeVehicle && _activeVehicle.armed && !suppressWarning) { // Check if vehicle is armed
                    const gpsCount = _activeVehicle.gps.count.value;
                    const hdopValue = _activeVehicle.gps.hdop.value;
                    const vdopValue = _activeVehicle.gps.vdop.value;
