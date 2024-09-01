@@ -158,6 +158,15 @@ Item {
                        suppressTimer.start();
                    }
                }
+               QGCButton {
+                   text: qsTr("RETURN")
+                   onClicked: {
+                       showWarningPopup = false;
+                       if (_activeVehicle) {
+                           _activeVehicle.guidedModeRTL(false); // Trigger RTL mode
+                       }
+                   }
+               }
            }
 
 
