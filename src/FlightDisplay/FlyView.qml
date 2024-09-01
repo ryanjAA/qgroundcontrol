@@ -120,7 +120,7 @@ Item {
            }
 
            QGCLabel {
-               text: qsTr("High DOP, Low Satellite count or No 3D Lock detected.")
+               text: qsTr("High DOP, Low Satellite count or No 3D Lock detected")
                font.family: ScreenTools.demiboldFontFamily
                font.pointSize: ScreenTools.mediumFontPointSize
                color: "black"
@@ -128,7 +128,7 @@ Item {
            }
 
            QGCLabel {
-               text: qsTr("Recommend landing now.")
+               text: qsTr("Recommend landing now")
                font.family: ScreenTools.demiboldFontFamily
                font.pointSize: ScreenTools.mediumFontPointSize
                font.italic: true
