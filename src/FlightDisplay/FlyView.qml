@@ -79,125 +79,126 @@ Item {
     }
 
     Rectangle {
-           id: gpsWarningPopupBackground
-           width: parent.width * 0.35
-           height: parent.height * 0.25
-           color: "#FFEB3B" // Yellow color
-           radius: 20
-           opacity: 0.5
-           anchors.verticalCenter: parent.verticalCenter
-           anchors.horizontalCenter: parent.horizontalCenter
-           anchors.verticalCenterOffset: 0
-           visible: showWarningPopup
-           z: QGroundControl.zOrderTopMost
-           border.color: "black"
-           border.width: 2
-       }
+        id: gpsWarningPopupBackground
+        width: parent.width * 0.35
+        height: parent.height * 0.25
+        color: "#FFEB3B" // Yellow color
+        radius: 20
+        opacity: 0.5
+        anchors.verticalCenter: parent.verticalCenter
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.verticalCenterOffset: 0
+        visible: showWarningPopup
+        z: QGroundControl.zOrderTopMost
+        border.color: "black"
+        border.width: 2
+    }
 
+    ColumnLayout {
+        id: gpsWarningPopupContent
+        width: gpsWarningPopupBackground.width
+        height: gpsWarningPopupBackground.height
+        anchors.centerIn: gpsWarningPopupBackground
+        spacing: ScreenTools.defaultFontPixelHeight
+        visible: showWarningPopup
+        z: gpsWarningPopupBackground.z + 1
+        anchors.margins: 20
 
-       ColumnLayout {
-           id: gpsWarningPopupContent
-           width: gpsWarningPopupBackground.width
-           height: gpsWarningPopupBackground.height
-           anchors.centerIn: gpsWarningPopupBackground
-           spacing: ScreenTools.defaultFontPixelHeight
-           visible: showWarningPopup
-           z: gpsWarningPopupBackground.z + 1
-           anchors.margins: 20
+        Rectangle {
+            Layout.fillHeight: true
+            height: 0
+        }
 
+        QGCLabel {
+            text: qsTr("WARNING: DEGRADED GPS")
+            font.family: ScreenTools.demiboldFontFamily
+            font.pointSize: ScreenTools.largeFontPointSize
+            color: "black"
+            Layout.alignment: Qt.AlignHCenter
+        }
 
-           Rectangle {
-               Layout.fillHeight: true
-               height: 0
-           }
+        QGCLabel {
+            text: qsTr("High DOP, Low Satellite count or No 3D Lock detected")
+            font.family: ScreenTools.demiboldFontFamily
+            font.pointSize: ScreenTools.mediumFontPointSize
+            color: "black"
+            Layout.alignment: Qt.AlignHCenter
+        }
 
-           QGCLabel {
-               text: qsTr("WARNING: DEGRADED GPS")
-               font.family: ScreenTools.demiboldFontFamily
-               font.pointSize: ScreenTools.largeFontPointSize
-               color: "black"
-               Layout.alignment: Qt.AlignHCenter
-           }
+        QGCLabel {
+            text: qsTr("Recommend landing now")
+            font.family: ScreenTools.demiboldFontFamily
+            font.pointSize: ScreenTools.mediumFontPointSize
+            font.italic: true
+            color: "black"
+            Layout.alignment: Qt.AlignHCenter
+        }
 
-           QGCLabel {
-               text: qsTr("High DOP, Low Satellite count or No 3D Lock detected")
-               font.family: ScreenTools.demiboldFontFamily
-               font.pointSize: ScreenTools.mediumFontPointSize
-               color: "black"
-               Layout.alignment: Qt.AlignHCenter
-           }
+        RowLayout {
+            Layout.alignment: Qt.AlignHCenter
+            spacing: ScreenTools.defaultFontPixelWidth * 5
 
-           QGCLabel {
-               text: qsTr("Recommend landing now")
-               font.family: ScreenTools.demiboldFontFamily
-               font.pointSize: ScreenTools.mediumFontPointSize
-               font.italic: true
-               color: "black"
-               Layout.alignment: Qt.AlignHCenter
-           }
+            QGCButton {
+                text: qsTr("CLOSE")
+                onClicked: {
+                    showWarningPopup = false;
+                }
+            }
+            QGCButton {
+                text: qsTr("SUPPRESS")
+                onClicked: {
+                    showWarningPopup = false;
+                    suppressWarning = true;
+                    if (suppressTimer) {
+                        suppressTimer.stop();
+                    }
+                    suppressTimer = Qt.createQmlObject("import QtQuick 2.0; Timer { interval: suppressDuration; repeat: false; onTriggered: suppressWarning = false; }", _root);
+                    suppressTimer.start();
+                }
+            }
+            QGCButton {
+                text: qsTr("RETURN")
+                onClicked: {
+                    showWarningPopup = false;
+                    if (_activeVehicle) {
+                        _activeVehicle.guidedModeRTL(false); // Trigger RTL mode
+                    }
+                    // Suppress warnings for 30 seconds after pressing RETURN
+                    suppressWarning = true;
+                    if (suppressTimer) {
+                        suppressTimer.stop();
+                    }
+                    suppressTimer = Qt.createQmlObject("import QtQuick 2.0; Timer { interval: suppressDuration; repeat: false; onTriggered: suppressWarning = false; }", _root);
+                    suppressTimer.start();
+                }
+            }
+        }
 
-           RowLayout {
-               Layout.alignment: Qt.AlignHCenter
-               spacing: ScreenTools.defaultFontPixelWidth * 5
+        Rectangle {
+            Layout.fillHeight: true
+            height: 0
+        }
+    }
 
-               QGCButton {
-                   text: qsTr("CLOSE")
-                   onClicked: {
-                       showWarningPopup = false;
-                   }
-               }
-               QGCButton {
-                   text: qsTr("SUPPRESS")
-                   onClicked: {
-                       showWarningPopup = false;
-                       suppressWarning = true;
-                       if (suppressTimer) {
-                           suppressTimer.stop();
-                       }
-                       suppressTimer = Qt.createQmlObject("import QtQuick 2.0; Timer { interval: suppressDuration; repeat: false; onTriggered: suppressWarning = false; }", _root);
-                       suppressTimer.start();
-                   }
-               }
-               QGCButton {
-                   text: qsTr("RETURN")
-                   onClicked: {
-                       showWarningPopup = false;
-                       if (_activeVehicle) {
-                           _activeVehicle.guidedModeRTL(false); // Trigger RTL mode
-                       }
-                   }
-               }
-           }
+    Timer {
+        interval: 1000 // Check every second
+        running: true
+        repeat: true
+        onTriggered: {
+            if (_activeVehicle && _activeVehicle.armed && !suppressWarning) { // Check if vehicle is armed
+                const gpsCount = _activeVehicle.gps.count.value;
+                const hdopValue = _activeVehicle.gps.hdop.value;
+                const vdopValue = _activeVehicle.gps.vdop.value;
+                const lockEnum = _activeVehicle.gps.lock.enumIndex;
 
-
-           Rectangle {
-               Layout.fillHeight: true
-               height: 0
-           }
-       }
-
-
-       Timer {
-           interval: 1000 // Check every second
-           running: true
-           repeat: true
-           onTriggered: {
-               //if (_activeVehicle && !suppressWarning) {
-               if (_activeVehicle && _activeVehicle.armed && !suppressWarning) { // Check if vehicle is armed
-                   const gpsCount = _activeVehicle.gps.count.value;
-                   const hdopValue = _activeVehicle.gps.hdop.value;
-                   const vdopValue = _activeVehicle.gps.vdop.value;
-                   const lockEnum = _activeVehicle.gps.lock.enumIndex;
-
-                   // Sat Conditions:
-                   // Trigger popup if satellite count is low, HDOP or VDOP is high, or no adequate GPS lock
-                   if (gpsCount < 10 || hdopValue > 3 || vdopValue > 3 || lockEnum === 0 || lockEnum === 1 || lockEnum === 2) {
-                       showWarningPopup = true;
-                   }
-               }
-           }
-       }
-
+                // Sat Conditions:
+                // Trigger popup if satellite count is low, HDOP or VDOP is high, or no adequate GPS lock
+                if (gpsCount < 10 || hdopValue > 3 || vdopValue > 3 || lockEnum === 0 || lockEnum === 1 || lockEnum === 2) {
+                    showWarningPopup = true;
+                }
+            }
+        }
+    }
 
 
     FlyViewWidgetLayer {
