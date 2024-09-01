@@ -34,6 +34,7 @@ Item {
     property var planController:    _planController
     property var guidedController:  _guidedController
 
+
     PlanMasterController {
         id:                     _planController
         flyView:                true
@@ -43,6 +44,10 @@ Item {
     property bool   _mainWindowIsMap:       mapControl.pipState.state === mapControl.pipState.fullState
     property bool   _isFullWindowItemDark:  _mainWindowIsMap ? mapControl.isSatelliteMap : true
     property var    _activeVehicle:         QGroundControl.multiVehicleManager.activeVehicle
+    property bool   showWarningPopup:       false
+    property bool   suppressWarning:        false
+    property int    suppressDuration:       30000
+    property var    suppressTimer
     property var    _missionController:     _planController.missionController
     property var    _geoFenceController:    _planController.geoFenceController
     property var    _rallyPointController:  _planController.rallyPointController
@@ -72,6 +77,120 @@ Item {
         leftEdgeBottomInset:    _pipOverlay.visible ? _pipOverlay.x + _pipOverlay.width : 0
         bottomEdgeLeftInset:    _pipOverlay.visible ? parent.height - _pipOverlay.y : 0
     }
+
+    Rectangle {
+           id: gpsWarningPopupBackground
+           width: parent.width * 0.35
+           height: parent.height * 0.25
+           color: "#FFEB3B" // Yellow color
+           radius: 20
+           opacity: 0.5
+           anchors.verticalCenter: parent.verticalCenter
+           anchors.horizontalCenter: parent.horizontalCenter
+           anchors.verticalCenterOffset: 0
+           visible: showWarningPopup
+           z: QGroundControl.zOrderTopMost
+           border.color: "black"
+           border.width: 2
+       }
+
+
+       ColumnLayout {
+           id: gpsWarningPopupContent
+           width: gpsWarningPopupBackground.width
+           height: gpsWarningPopupBackground.height
+           anchors.centerIn: gpsWarningPopupBackground
+           spacing: ScreenTools.defaultFontPixelHeight
+           visible: showWarningPopup
+           z: gpsWarningPopupBackground.z + 1
+           anchors.margins: 20
+
+
+           Rectangle {
+               Layout.fillHeight: true
+               height: 0
+           }
+
+           QGCLabel {
+               text: qsTr("WARNING: DEGRADED GPS")
+               font.family: ScreenTools.demiboldFontFamily
+               font.pointSize: ScreenTools.largeFontPointSize
+               color: "black"
+               Layout.alignment: Qt.AlignHCenter
+           }
+
+           QGCLabel {
+               text: qsTr("High DOP, Low Satellite count or No 3D Lock detected.")
+               font.family: ScreenTools.demiboldFontFamily
+               font.pointSize: ScreenTools.mediumFontPointSize
+               color: "black"
+               Layout.alignment: Qt.AlignHCenter
+           }
+
+           QGCLabel {
+               text: qsTr("Recommend landing now.")
+               font.family: ScreenTools.demiboldFontFamily
+               font.pointSize: ScreenTools.mediumFontPointSize
+               font.italic: true
+               color: "black"
+               Layout.alignment: Qt.AlignHCenter
+           }
+
+           RowLayout {
+               Layout.alignment: Qt.AlignHCenter
+               spacing: ScreenTools.defaultFontPixelWidth * 5
+
+               QGCButton {
+                   text: qsTr("CLOSE")
+                   onClicked: {
+                       showWarningPopup = false;
+                   }
+               }
+               QGCButton {
+                   text: qsTr("SUPPRESS")
+                   onClicked: {
+                       showWarningPopup = false;
+                       suppressWarning = true;
+                       if (suppressTimer) {
+                           suppressTimer.stop();
+                       }
+                       suppressTimer = Qt.createQmlObject("import QtQuick 2.0; Timer { interval: suppressDuration; repeat: false; onTriggered: suppressWarning = false; }", _root);
+                       suppressTimer.start();
+                   }
+               }
+           }
+
+
+           Rectangle {
+               Layout.fillHeight: true
+               height: 0
+           }
+       }
+
+
+       Timer {
+           interval: 1000 // Check every second
+           running: true
+           repeat: true
+           onTriggered: {
+               if (_activeVehicle && !suppressWarning) {
+                   const gpsCount = _activeVehicle.gps.count.value;
+                   const hdopValue = _activeVehicle.gps.hdop.value;
+                   const vdopValue = _activeVehicle.gps.vdop.value;
+                   const lockEnum = _activeVehicle.gps.lock.enumIndex;
+
+                   // Sat Conditions:
+                   // Trigger popup if satellite count is low, HDOP or VDOP is high, or no adequate GPS lock
+                   if (gpsCount < 10 || hdopValue > 3 || vdopValue > 3 || lockEnum === 0 || lockEnum === 1 || lockEnum === 2) {
+                       showWarningPopup = true;
+                   } else {
+                       showWarningPopup = false; // Hide popup if conditions are not met
+                   }
+               }
+           }
+       }
+
+
 
     FlyViewWidgetLayer {
         id:                     widgetLayer             //AA This cotrols both the slider and top altitude. cant alter here or both get changed.
