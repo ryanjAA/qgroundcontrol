@@ -183,8 +183,6 @@ Item {
                    // Trigger popup if satellite count is low, HDOP or VDOP is high, or no adequate GPS lock
                    if (gpsCount < 10 || hdopValue > 3 || vdopValue > 3 || lockEnum === 0 || lockEnum === 1 || lockEnum === 2) {
                        showWarningPopup = true;
-                   } else {
-                       showWarningPopup = false; // Hide popup if conditions are not met
                    }
                }
            }
