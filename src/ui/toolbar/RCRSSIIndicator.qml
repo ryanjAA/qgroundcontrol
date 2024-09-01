@@ -49,11 +49,11 @@ Item {
             // so for these numbers we use the default/old color.
             return qgcPal.buttonText;
         } else if (_activeVehicle.rcRSSI > _rcRSSIWarning.rawValue) {
-            return qgcPal.colorGreen;
+            return "green";
         } else if (_activeVehicle.rcRSSI > _rcRSSIAlert.rawValue) {
-            return qgcPal.colorOrange;
+            return "orange";
         } else {
-            return _rcpulser ? qgcPal.colorRed : qgcPal.buttonText;
+            return _rcpulser ? "red" : qgcPal.buttonText;
         }
     }
 
@@ -115,7 +115,7 @@ Item {
             sourceSize.height:  height
             source:             "/qmlimages/RC.svg"
             fillMode:           Image.PreserveAspectFit
-            opacity:            _rcRSSIAvailable ? 1 : 0.5
+            opacity:            _rcRSSIAvailable ? 1 : 1
             //color:              qgcPal.buttonText
             color:              linkColor()
         }
