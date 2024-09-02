@@ -162,19 +162,29 @@ MapQuickItem {
                               }
 
 
-                      function getDistanceToActiveVehicle(adsbCoord, activeCoord) {
-                          var distanceMeters = adsbCoord.distanceTo(activeCoord); // Calculate distance in meters
-                          var distanceMiles = distanceMeters / 1609.34; // Convert meters to miles
+                              function getDistanceToActiveVehicle(adsbCoord, activeCoord) {
+                                  var distanceMeters = adsbCoord.distanceTo(activeCoord); // Calculate distance in meters
 
-                          if (distanceMiles < 2) {
-                              // Display in feet if less than 2 miles
-                              var distanceFeet = distanceMiles * 5280; // Convert miles to feet
-                              return distanceFeet.toFixed(0) + " ft";
-                          } else {
-                              // Display in miles if 2 miles or more
-                              return distanceMiles.toFixed(1) + " mi";
-                          }
-                      }
+                                  // Convert distance to the preferred units based on app settings
+                                  var distanceInPreferredUnits = QGroundControl.unitsConversion.metersToAppSettingsHorizontalDistanceUnits(distanceMeters);
+                                  var distanceUnitsString = QGroundControl.unitsConversion.appSettingsHorizontalDistanceUnitsString;
+
+                                  // Determine the appropriate threshold for switching between smaller and larger units
+                                  var threshold;
+                                  if (distanceUnitsString === "ft") {
+                                      threshold = 2 * 5280; // 2 miles in feet
+                                  } else if (distanceUnitsString === "m") {
+                                      threshold = 3218; // 3.2 kilometers in meters
+                                  }
+
+                                  // Check which units to use for display based on the calculated threshold
+                                  if ((distanceUnitsString === "ft" || distanceUnitsString === "m") && distanceInPreferredUnits < threshold) {
+                                      return distanceInPreferredUnits.toFixed(0) + " " + distanceUnitsString;
+                                  } else {
+                                      return (distanceInPreferredUnits / (distanceUnitsString === "ft" ? 5280 : 1000)).toFixed(1) + " " + (distanceUnitsString === "ft" ? "mi" : "km");
+                                  }
+                              }
+
 
         }
     }
