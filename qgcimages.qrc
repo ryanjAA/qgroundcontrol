@@ -216,5 +216,6 @@
         <file alias="TelemRSSI-LS.svg">src/ui/toolbar/Images/TelemRSSI-LS.svg</file>
         <file alias="TelemRSSI-HS.svg">src/ui/toolbar/Images/TelemRSSI-HS.svg</file>
         <file alias="RID.svg">src/FlightMap/Images/RID.svg</file>
+        <file alias="OAT.svg">src/ui/toolbar/Images/OAT.svg</file>
     </qresource>
 </RCC>

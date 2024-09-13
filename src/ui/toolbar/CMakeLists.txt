@@ -1,5 +1,6 @@
 add_custom_target(UiToolbarQml
 	SOURCES
+		AirTemperature.qml
 		ArmedIndicator.qml
 		BatteryIndicator.qml
 		FlightModeMenuIndicator.qml
