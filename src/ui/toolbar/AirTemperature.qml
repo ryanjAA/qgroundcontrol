@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- * (c) 2009-2020 QGROUNDCONTROL PROJECT <http://www.qgroundcontrol.org>
+ * (c) 2009-2023 QGROUNDCONTROL PROJECT <http://www.qgroundcontrol.org>
  *
  * QGroundControl is licensed according to the terms in the file
  * COPYING.md in the root of the source code directory.
@@ -36,6 +36,15 @@ Item {
                 : (tempCelsius * 9/5) + 32; // Convert to Fahrenheit
     }
 
+    function formatTemperature(value, label) {
+        if (value !== undefined && value !== null && !isNaN(value)) {
+            return convertTemperature(value).toFixed(1) + (_unitsSettings.temperatureUnits.value === UnitsSettings.TemperatureUnitsCelsius ? " °C" : " °F");
+        } else {
+            console.log(label + " temperature is undefined or invalid");  // Add log for debugging
+            return "--.--";
+        }
+    }
+
     Component {
         id: tempInfoPopup
         Rectangle {
@@ -47,26 +56,35 @@ Item {
             Column {
                 id:                 tempCol
                 spacing:            ScreenTools.defaultFontPixelHeight * 0.5
-                width:              Math.max(tempGrid.width, tempLabel.width)
+                width:              tempGrid.width
                 anchors.margins:    ScreenTools.defaultFontPixelHeight
                 anchors.centerIn:   parent
-                QGCLabel {
-                    id:             tempLabel
-                    text:           qsTr("Outside Air Temperature")
-                    font.family:    ScreenTools.demiboldFontFamily
-                    anchors.horizontalCenter: parent.horizontalCenter
-                }
+
                 GridLayout {
                     id:                 tempGrid
                     anchors.margins:    ScreenTools.defaultFontPixelHeight
                     columnSpacing:      ScreenTools.defaultFontPixelWidth
                     columns:            2
                     anchors.horizontalCenter: parent.horizontalCenter
-                    QGCLabel { text: qsTr("Temperature:") }
+
                     QGCLabel {
-                        text: (_activeVehicle && _activeVehicle.temperature && _activeVehicle.temperature.temperature1 && !isNaN(_activeVehicle.temperature.temperature1.rawValue))
-                            ? convertTemperature(_activeVehicle.temperature.temperature1.rawValue).toFixed(1) + (_unitsSettings.temperatureUnits.value === UnitsSettings.TemperatureUnitsCelsius ? " °C" : " °F")
-                            : "--.-- °C";
+                        text: qsTr("External Probe:")
+                    }
+
+                    QGCLabel {
+                        text: formatTemperature(_activeVehicle && _activeVehicle.hygrometer && _activeVehicle.hygrometer.hygroTemp
+                            ? _activeVehicle.hygrometer.hygroTemp.rawValue
+                            : undefined, "External Probe")
+                    }
+
+                    QGCLabel {
+                        text: qsTr("Pitot Tube:")
+                    }
+
+                    QGCLabel {
+                        text: formatTemperature(_activeVehicle && _activeVehicle.temperature && _activeVehicle.temperature.temperature1
+                            ? _activeVehicle.temperature.temperature1.rawValue
+                            : undefined, "Pitot Tube")
                     }
                 }
             }
