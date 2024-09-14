@@ -23,6 +23,13 @@
     "type":             "double",
     "decimalPlaces":    2,
     "units":            "C"
-}
+},
+{
+            "name":             "temperaturePressDiff",
+            "shortDesc": "Temperature Pressure Diff",
+            "type":             "double",
+            "decimalPlaces":    2,
+            "units":            "C"
+        }
 ]
 }

@@ -22,10 +22,14 @@ public:
     Q_PROPERTY(Fact* temperature1       READ temperature1       CONSTANT)
     Q_PROPERTY(Fact* temperature2       READ temperature2       CONSTANT)
     Q_PROPERTY(Fact* temperature3       READ temperature3       CONSTANT)
+    Q_PROPERTY(Fact* temperaturePressDiff READ temperaturePressDiff CONSTANT) //AA Added for temp
+
 
     Fact* temperature1 () { return &_temperature1Fact; }
     Fact* temperature2 () { return &_temperature2Fact; }
     Fact* temperature3 () { return &_temperature3Fact; }
+    Fact* temperaturePressDiff () { return &_temperaturePressDiffFact; } //AA Added for temp
+
 
     // Overrides from FactGroup
     void handleMessage(Vehicle* vehicle, mavlink_message_t& message) override;
@@ -33,6 +37,7 @@ public:
     static const char* _temperature1FactName;
     static const char* _temperature2FactName;
     static const char* _temperature3FactName;
+    static const char* _temperaturePressDiffFactName; //AA Added for temp
 
     static const char* _settingsGroup;
 
@@ -48,4 +53,6 @@ private:
     Fact            _temperature1Fact;
     Fact            _temperature2Fact;
     Fact            _temperature3Fact;
+    Fact            _temperaturePressDiffFact; //AA Added for temp
+
 };
