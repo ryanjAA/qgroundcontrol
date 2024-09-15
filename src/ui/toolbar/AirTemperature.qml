@@ -19,7 +19,7 @@ import QGroundControl.SettingsManager       1.0
 import MAVLink                              1.0
 
 //-------------------------------------------------------------------------
-//-- Air Temperature Indicator
+//-- Air Temperature and Humidity Indicator
 Item {
     id:             _root
     anchors.top:    parent.top
@@ -40,7 +40,14 @@ Item {
         if (value !== undefined && value !== null && !isNaN(value)) {
             return convertTemperature(value).toFixed(1) + (_unitsSettings.temperatureUnits.value === UnitsSettings.TemperatureUnitsCelsius ? " °C" : " °F");
         } else {
-            console.log(label + " temperature is undefined or invalid");  // Add log for debugging
+            return "--.--";
+        }
+    }
+
+    function formatHumidity(value) {
+        if (value !== undefined && value !== null && !isNaN(value)) {
+            return value.toFixed(1) + " %";
+        } else {
             return "--.--";
         }
     }
@@ -68,13 +75,23 @@ Item {
                     anchors.horizontalCenter: parent.horizontalCenter
 
                     QGCLabel {
-                        text: qsTr("External Probe:")
+                        text: qsTr("External:")
                     }
 
                     QGCLabel {
                         text: formatTemperature(_activeVehicle && _activeVehicle.hygrometer && _activeVehicle.hygrometer.hygroTemp
                             ? _activeVehicle.hygrometer.hygroTemp.rawValue
-                            : undefined, "External Probe")
+                            : undefined, "External")
+                    }
+
+                    QGCLabel {
+                        text: qsTr("Humidity:")
+                    }
+
+                    QGCLabel {
+                        text: formatHumidity(_activeVehicle && _activeVehicle.hygrometer && _activeVehicle.hygrometer.hygroHumi
+                            ? _activeVehicle.hygrometer.hygroHumi.rawValue
+                            : undefined)
                     }
 
                     QGCLabel {
@@ -82,9 +99,18 @@ Item {
                     }
 
                     QGCLabel {
+                        text: formatTemperature(_activeVehicle && _activeVehicle.temperature && _activeVehicle.temperature.temperaturePressDiff
+                                ? _activeVehicle.temperature.temperaturePressDiff.rawValue
+                                : undefined, "Pitot Tube")
+                    }
+                    QGCLabel {
+                        text: qsTr("Autopilot:")
+                    }
+
+                    QGCLabel {
                         text: formatTemperature(_activeVehicle && _activeVehicle.temperature && _activeVehicle.temperature.temperature1
-                            ? _activeVehicle.temperature.temperature1.rawValue
-                            : undefined, "Pitot Tube")
+                                ? _activeVehicle.temperature.temperature1.rawValue
+                                : undefined, "Autopilot")
                     }
                 }
             }
