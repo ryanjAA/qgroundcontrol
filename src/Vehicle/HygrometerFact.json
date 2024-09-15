@@ -14,7 +14,7 @@
     "name":             "humidity",
     "shortDesc": "Humidity %",
     "type":             "double",
-    "decimalPlaces":    3,
+    "decimalPlaces":    2,
     "units":            "%"
 },
 {
