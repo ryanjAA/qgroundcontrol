@@ -24,7 +24,7 @@ Item {
     id:             _root
     anchors.top:    parent.top
     anchors.right:  parent.right
-    width:          tempIcon.width * 1.1
+    width:          tempIcon.width * 1.5 + 20 // Increased width to avoid overlap
 
     property bool showIndicator: true
     property var _activeVehicle: QGroundControl.multiVehicleManager.activeVehicle
@@ -36,7 +36,17 @@ Item {
                 : (tempCelsius * 9/5) + 32; // Convert to Fahrenheit
     }
 
-    function formatTemperature(value, label) {
+    // Only round temperature for the label next to the icon
+    function formatTemperatureNoDecimal(value) {
+        if (value !== undefined && value !== null && !isNaN(value)) {
+            return Math.round(convertTemperature(value)) + (_unitsSettings.temperatureUnits.value === UnitsSettings.TemperatureUnitsCelsius ? " °C" : " °F");
+        } else {
+            return "--";
+        }
+    }
+
+    // Keep full precision for the detailed temperature in the popup
+    function formatTemperature(value) {
         if (value !== undefined && value !== null && !isNaN(value)) {
             return convertTemperature(value).toFixed(1) + (_unitsSettings.temperatureUnits.value === UnitsSettings.TemperatureUnitsCelsius ? " °C" : " °F");
         } else {
@@ -78,10 +88,11 @@ Item {
                         text: qsTr("External:")
                     }
 
+                    // Full precision for external temperature
                     QGCLabel {
                         text: formatTemperature(_activeVehicle && _activeVehicle.hygrometer && _activeVehicle.hygrometer.hygroTemp
                             ? _activeVehicle.hygrometer.hygroTemp.rawValue
-                            : undefined, "External")
+                            : undefined)
                     }
 
                     QGCLabel {
@@ -98,19 +109,22 @@ Item {
                         text: qsTr("Pitot Tube:")
                     }
 
+                    // Full precision for pitot tube temperature
                     QGCLabel {
                         text: formatTemperature(_activeVehicle && _activeVehicle.temperature && _activeVehicle.temperature.temperaturePressDiff
                                 ? _activeVehicle.temperature.temperaturePressDiff.rawValue
-                                : undefined, "Pitot Tube")
+                                : undefined)
                     }
+
                     QGCLabel {
                         text: qsTr("Autopilot:")
                     }
 
+                    // Full precision for autopilot temperature
                     QGCLabel {
                         text: formatTemperature(_activeVehicle && _activeVehicle.temperature && _activeVehicle.temperature.temperature1
                                 ? _activeVehicle.temperature.temperature1.rawValue
-                                : undefined, "Autopilot")
+                                : undefined)
                     }
                 }
             }
@@ -125,6 +139,23 @@ Item {
         sourceSize.height:  height
         source:             "/qmlimages/OAT.svg"
         fillMode:           Image.PreserveAspectFit
+    }
+
+    QGCLabel {
+        id: tempLabel
+        anchors.verticalCenter: tempIcon.verticalCenter
+        anchors.left: tempIcon.right
+        // Use rounded temperature only for the label next to the icon
+        text: formatTemperatureNoDecimal(
+                  (_activeVehicle && _activeVehicle.hygrometer && _activeVehicle.hygrometer.hygroTemp && _activeVehicle.hygrometer.hygroTemp.rawValue !== undefined && !isNaN(_activeVehicle.hygrometer.hygroTemp.rawValue))
+                  ? _activeVehicle.hygrometer.hygroTemp.rawValue
+                  : (_activeVehicle && _activeVehicle.temperature && _activeVehicle.temperature.temperaturePressDiff && _activeVehicle.temperature.temperaturePressDiff.rawValue !== undefined && !isNaN(_activeVehicle.temperature.temperaturePressDiff.rawValue))
+                  ? _activeVehicle.temperature.temperaturePressDiff.rawValue
+                  : undefined
+              )
+        color: qgcPal.text
+        font.family: ScreenTools.demiboldFontFamily
+        visible: showIndicator
     }
 
     MouseArea {
