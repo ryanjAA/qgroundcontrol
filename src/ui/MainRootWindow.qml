@@ -350,36 +350,33 @@ ApplicationWindow {
                         Layout.alignment:       Qt.AlignHCenter
 
                         QGCLabel {
-                            id:                     versionLabel
-                            text:                   qsTr("%1 Version").arg(QGroundControl.appName)
-                            font.pointSize:         ScreenTools.smallFontPointSize
-                            wrapMode:               QGCLabel.WordWrap
-                            Layout.maximumWidth:    parent.width
-                            Layout.alignment:       Qt.AlignHCenter
-                        }
+                            id: versionLabel
+                            text: versionMouseArea.clicked ? "Build number: 1298" : QGroundControl.qgcVersion
+                            font.pointSize: ScreenTools.smallFontPointSize
+                            Layout.maximumWidth: parent.width
+                            Layout.alignment: Qt.AlignHCenter
 
-                        QGCLabel {
-                            text:                   QGroundControl.qgcVersion
-                            font.pointSize:         ScreenTools.smallFontPointSize
-                            wrapMode:               QGCLabel.WrapAnywhere
-                            Layout.maximumWidth:    parent.width
-                            Layout.alignment:       Qt.AlignHCenter
+                            // Remove text wrapping to ensure it's displayed on one line
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
 
                             QGCMouseArea {
-                                id:                 easterEggMouseArea
-                                anchors.topMargin:  -versionLabel.height
-                                anchors.fill:       parent
+                                id: versionMouseArea
+                                anchors.fill: parent
+
+                                property bool clicked: false
 
                                 onClicked: {
-                                    if (mouse.modifiers & Qt.ControlModifier) {
-                                        QGroundControl.corePlugin.showTouchAreas = !QGroundControl.corePlugin.showTouchAreas
-                                        showTouchAreasNotification.open()
-                                    } else if (ScreenTools.isMobile || mouse.modifiers & Qt.ShiftModifier) {
-                                        if(!QGroundControl.corePlugin.showAdvancedUI) {
+                                    if (mouse.modifiers & Qt.ShiftModifier) {
+                                        // Easter egg: Shift + Click toggles advanced mode
+                                        if (!QGroundControl.corePlugin.showAdvancedUI) {
                                             advancedModeOnConfirmation.open()
                                         } else {
                                             advancedModeOffConfirmation.open()
                                         }
+                                    } else {
+                                        // Regular click: Toggle the build number text
+                                        clicked = !clicked
                                     }
                                 }
 
