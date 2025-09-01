@@ -7,9 +7,13 @@ on:
       - 'AAGS-4.3.0-2.0.4'
     tags:
       - 'v*'
+    paths-ignore:
+      - 'docs/**'
   pull_request:
     branches:
     - '*'
+    paths-ignore:
+      - 'docs/**'
 
 defaults:
   run:
@@ -22,7 +26,7 @@ env:
 
 jobs:
   build:
-    runs-on:  ubuntu-20.04
+    runs-on:  ubuntu-22.04
 
     strategy:
       matrix:
@@ -40,17 +44,11 @@ jobs:
         with:
           submodules: recursive
 
-      - run: sudo apt update
-
-      - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@v1.3.1
         with:
-          create-symlink: true
-          key: ${{ runner.os }}-${{ matrix.arch }}-Release
-          restore-keys: ${{ runner.os }}-${{ matrix.arch }}-Release
-          max-size: "2G"
-          append-timestamp: false
-        if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+          android: 'false'
+        continue-on-error: true
 
       - name: Get all tags for correct version determination
         working-directory:  ${{ github.workspace }}
@@ -75,12 +73,30 @@ jobs:
           add-to-path: false
 
       - name: Remove Android SDKs to force usage of android-33 only
-        run: |
-            ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --uninstall "platforms;android-33-ext5"
-            ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --uninstall "platforms;android-33-ext4"
-            ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --uninstall "platforms;android-34"
-            ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --uninstall "platforms;android-34-ext8"
+        run: ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --list_installed | grep "platforms;android-" | grep -v "platforms;android-33 " | awk '{print $1}' | xargs -I {} ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --uninstall "{}"
 
+      - name: Install ccache
+        run:  sudo apt-get install ccache
+
+      - name: Prepare ccache timestamp
+        id: ccache_cache_timestamp
+        run: echo "name=timestamp::$(date --utc +'%Y-%m-%d-%H\;%M\;%S')" >> $GITHUB_OUTPUT
+
+      - name: ccache cache files
+        uses: actions/cache@v3
+        with:
+          path:         ~/.ccache
+          key:          ${{ runner.os }}-ccache-${{steps.ccache_cache_timestamp.outputs.timestamp}}
+          restore-keys: ${{ runner.os }}-ccache-
+
+      - name: Setup ccache
+        run: |
+            mkdir -p ~/.ccache
+            echo "base_dir = ${GITHUB_WORKSPACE}" > ~/.ccache/ccache.conf
+            echo "compression = true" >> ~/.ccache/ccache.conf
+            echo "compression_level = 5" >> ~/.ccache/ccache.conf
+            ccache -s
+            ccache -z
 
       - name: Create build directory
         run:  mkdir ${{ runner.temp }}/shadow_build_dir
@@ -88,9 +104,9 @@ jobs:
       - name:               Install gstreamer
         working-directory:  ${{ github.workspace }}
         run: |
-            wget --quiet https://gstreamer.freedesktop.org/data/pkg/android/1.18.5/gstreamer-1.0-android-universal-1.18.5.tar.xz
-            mkdir gstreamer-1.0-android-universal-1.18.5
-            tar xf gstreamer-1.0-android-universal-1.18.5.tar.xz -C gstreamer-1.0-android-universal-1.18.5
+            wget --quiet https://gstreamer.freedesktop.org/data/pkg/android/1.18.6/gstreamer-1.0-android-universal-1.18.6.tar.xz
+            mkdir gstreamer-1.0-android-universal-1.18.6
+            tar xf gstreamer-1.0-android-universal-1.18.6.tar.xz -C gstreamer-1.0-android-universal-1.18.6
 
       - name: Update android manifest
         if: github.ref_name != 'Stable'
@@ -109,6 +125,8 @@ jobs:
             qmake -r ${SOURCE_DIR}/qgroundcontrol.pro -spec android-clang CONFIG+=${BUILD_TYPE} CONFIG+=installer ANDROID_ABIS="${{ matrix.eabi }}"
             make -j2
 
+      - name: ccache post-run
+        run:  ccache -s
 
       - name: Save artifact
         uses: actions/upload-artifact@master
