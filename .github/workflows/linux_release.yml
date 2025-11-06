@@ -1,128 +1,71 @@
-name: Linux Release
+name: Linux AppImage
 
 on:
   push:
-    branches:
-      #- 'AAGS-4.3.0-2.0.4'
-       - 'main'
-    tags:
-      - 'v*'
+    branches: ['AAGS-4.3.0-2.0.4']
+    tags: ['v*']
   pull_request:
-    branches:
-    - '*'
-
-defaults:
-  run:
-    shell: bash
+    branches: ['*']
+  workflow_dispatch:
 
 env:
-  SOURCE_DIR:   ${{ github.workspace }}
-  QT_VERSION:   5.15.2
-  ARTIFACT:     AAGS.AppImage
-  BUILD_TYPE:   ${{ fromJSON('["DailyBuild", "StableBuild"]')[ github.ref_type == 'tag' || contains(github.ref, 'Stable_' ) ] }}
+  QT_VERSION: 5.15.2
 
 jobs:
-  build:
-    #runs-on:  ubuntu-20.04
-    runs-on: self-hosted
-
+  appimage:
+    runs-on: ubuntu-22.04
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-      - name: Checkout submodules
-        run: git submodule update --init --recursive
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-
-      - name: Setup Directories
-        run: |
-          mkdir -p ${{ env.SOURCE_DIR }}/staging
-          mkdir -p ${{ env.SOURCE_DIR }}/package
-        shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
-      
-      - name: Get all tags for correct version determination
-        working-directory:  ${{ github.workspace }}
-        run: |
-          git fetch --all --tags -f --depth 1
-
-      - name: Install Qt
+      - name: Install Qt (Linux)
         uses: jurplel/install-qt-action@v3
         with:
-          version:      ${{ env.QT_VERSION }}
-          host:         linux
-          target:       desktop
-          dir:          ${{ runner.temp }}
-          modules:      qtcharts
-          setup-python: true
+          version: ${{ env.QT_VERSION }}
+          host: linux
+          target: desktop
+          arch: gcc_64
+          modules: qtcharts
 
-      - name: Install QGC source dependencies
-        run:  sudo apt-get install -y libsdl2-dev
+      - name: Build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential ninja-build patchelf \
+              libgl1-mesa-dev \
+              gstreamer1.0-tools gstreamer1.0-plugins-base \
+              gstreamer1.0-plugins-good gstreamer1.0-plugins-bad \
+              gstreamer1.0-plugins-ugly gstreamer1.0-libav
 
-      - name: Install Gstreamer
-        run:  sudo apt-get install -y libgstreamer-plugins-base1.0-dev libgstreamer1.0-0:amd64 libgstreamer1.0-dev
+      - name: Build AAGS
+        run: |
+          mkdir -p build && cd build
+          qmake -r ../qgroundcontrol.pro CONFIG+=release CONFIG+=installer
+          make -j$(nproc)
 
-      - name: Install ccache
-        run:  sudo apt-get install ccache
+      - name: Package AppImage
+        run: |
+          wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+          chmod +x linuxdeploy-*.AppImage
+          mkdir -p AppDir/usr/bin
+          cp build/staging/AAGS AppDir/usr/bin/
+          # Optional: desktop/icon inside AppImage
+          mkdir -p AppDir/usr/share/applications AppDir/usr/share/icons/hicolor/256x256/apps
+          cp deploy/linux/com.appliedaero.AAGS.desktop AppDir/usr/share/applications/
+          cp deploy/icons/aags.png AppDir/usr/share/icons/hicolor/256x256/apps/com.appliedaero.AAGS.png
+          ./linuxdeploy-x86_64.AppImage --appdir AppDir --plugin qt --output appimage
+          ls -lh ./*.AppImage
 
-      - name: Install post-link dependencies
-        run:  sudo apt-get install -y binutils patchelf
-
-      - name: Prepare ccache timestamp
-        id: ccache_cache_timestamp
-        run: echo "name=timestamp::$(date --utc +'%Y-%m-%d-%H\;%M\;%S')" >> $GITHUB_OUTPUT
-
-      - name: ccache cache files
-        uses: actions/cache@v3
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
         with:
-          path:         ~/.ccache
-          key:          ${{ runner.os }}-ccache-${{steps.ccache_cache_timestamp.outputs.timestamp}}
-          restore-keys: ${{ runner.os }}-ccache-
+          name: AAGS-AppImage
+          path: ./*.AppImage
 
-      - name: Setup ccache
+      - name: Upload to S3 (optional)
+        if: github.event_name == 'push'
         run: |
-            mkdir -p ~/.ccache
-            echo "base_dir = ${GITHUB_WORKSPACE}" > ~/.ccache/ccache.conf
-            echo "compression = true" >> ~/.ccache/ccache.conf
-            echo "compression_level = 5" >> ~/.ccache/ccache.conf
-            ccache -s
-            ccache -z
-
-      - name: Create build directory
-        run:  mkdir ${{ runner.temp }}/shadow_build_dir
-
-      - name: Build
-        working-directory: ${{ runner.temp }}/shadow_build_dir
-        run:  |
-              qmake -r ${SOURCE_DIR}/qgroundcontrol.pro CONFIG+=installer CONFIG+=${BUILD_TYPE}
-              make -j2
-
-      - name: ccache post-run
-        run:  ccache -s
-
-      - name: Create AppImage
-        working-directory:  ${{ runner.temp }}/shadow_build_dir
-        #run:                ${SOURCE_DIR}/deploy/create_linux_appimage.sh ${SOURCE_DIR} ./staging ./package;
-        run:                ${SOURCE_DIR}/deploy/create_linux_appimage.sh ~/src/github/actions-runner/_work/qgroundcontrol/qgroundcontrol/staging ~/src/github/actions-runner/_work/qgroundcontrol/qgroundcontrol/package
-  
-
-
-      - name: Save artifact
-        uses: actions/upload-artifact@master
-        with:
-          name: ${{ env.ARTIFACT }}
-          path: ${{ runner.temp }}/shadow_build_dir/package/${{ env.ARTIFACT }}
-
-      - name: Upload build to S3 Bucket
-        if:                 github.event_name == 'push'
-        working-directory:  ${{ runner.temp }}/shadow_build_dir/package
-        run: |
-              aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
-              aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-              aws s3 cp ${ARTIFACT} s3://aags/builds/${{ github.ref_name }}/${ARTIFACT} --region us-west-2 --acl public-read
-
-      - name: Upload tagged stable build to S3 latest Bucket
-        if:                 github.event_name == 'push' && github.ref_type == 'tag'
-        working-directory:  ${{ runner.temp }}/shadow_build_dir/package
-        run: |
-              aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
-              aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-              aws s3 cp ${ARTIFACT} s3://aags/latest/${ARTIFACT} --region us-west-2 --acl public-read
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws s3 cp ./*.AppImage s3://aags/builds/${{ github.ref_name }}/ --region us-west-2 --acl public-read
