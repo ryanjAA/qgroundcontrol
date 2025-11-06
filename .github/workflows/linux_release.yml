@@ -62,16 +62,35 @@ jobs:
 
       - name: Package AppImage
         run: |
+          set -e
           wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
           wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
           chmod +x linuxdeploy-*.AppImage
+
+          # AppDir layout
           mkdir -p AppDir/usr/bin
-          cp build/staging/AAGS AppDir/usr/bin/
-          # Optional: desktop/icon inside AppImage
-          mkdir -p AppDir/usr/share/applications AppDir/usr/share/icons/hicolor/256x256/apps
-          cp deploy/linux/com.appliedaero.AAGS.desktop AppDir/usr/share/applications/
-          cp deploy/icons/aags.png AppDir/usr/share/icons/hicolor/256x256/apps/com.appliedaero.AAGS.png
+          cp build/staging/AAGS AppDir/usr/bin/AAGS
+          chmod +x AppDir/usr/bin/AAGS
+
+          # Generate a minimal desktop file
+          mkdir -p AppDir/usr/share/applications
+          cat > AppDir/usr/share/applications/com.appliedaero.AAGS.desktop << 'EOF'
+          [Desktop Entry]
+          Type=Application
+          Name=AAGS
+          Exec=AAGS
+          Icon=com.appliedaero.AAGS
+          Categories=Utility;Network;
+          EOF
+
+          # Create a placeholder 256x256 icon (transparent)
+          sudo apt-get update && sudo apt-get install -y imagemagick
+          mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
+          convert -size 256x256 canvas:none AppDir/usr/share/icons/hicolor/256x256/apps/com.appliedaero.AAGS.png
+
+          # Build the AppImage
           ./linuxdeploy-x86_64.AppImage --appdir AppDir --plugin qt --output appimage
+
           ls -lh ./*.AppImage
 
       - name: Upload artifact
