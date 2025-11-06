@@ -136,6 +136,13 @@ jobs:
       - name: Upload to S3 (optional)
         if: github.event_name == 'push'
         run: |
+          set -euo pipefail
+          # Find your produced AppImage (assumes it starts with AAGS)
+          FILE="$(ls -1 AAGS*.AppImage | head -n1)"
+          if [ -z "${FILE}" ]; then
+            echo "No AAGS AppImage found"; ls -la; exit 1
+          fi
+          echo "Uploading ${FILE}"
           aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws s3 cp ./*.AppImage s3://aags/builds/${{ github.ref_name }}/ --region us-west-2 --acl public-read
+          aws s3 cp "${FILE}" "s3://aags/builds/${{ github.ref_name }}/${FILE}" --region us-west-2 --acl public-read
