@@ -31,9 +31,15 @@ jobs:
       - name: Build deps (SDL2 + GStreamer dev)
         run: |
           sudo apt-get update
+          # Ensure 'universe' is enabled (usually already on, but harmless to add)
+          sudo apt-get install -y software-properties-common
+          sudo add-apt-repository -y universe
+
+          # Install dev headers in one shot (note libunwind-dev first to satisfy deps)
           sudo apt-get install -y \
             build-essential ninja-build patchelf pkg-config \
             libgl1-mesa-dev \
+            libunwind-dev \
             libsdl2-dev \
             libgstreamer1.0-dev \
             libgstreamer-plugins-base1.0-dev \
@@ -43,7 +49,7 @@ jobs:
             gstreamer1.0-plugins-ugly \
             gstreamer1.0-libav
 
-          # Sanity: ensure pkg-config can see them
+          # Sanity checks
           pkg-config --modversion sdl2
           pkg-config --modversion gstreamer-1.0
           pkg-config --modversion gstreamer-video-1.0
