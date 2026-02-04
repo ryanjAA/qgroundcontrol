@@ -296,32 +296,45 @@ FlightMap {
                             pointTimestamps = [];
                         }
                     }
-                    Timer {
-                        id: cleanupTimer
-                        interval: 5000 // Every 5 seconds
-                        repeat: true
-                        running: true
-                        onTriggered: {
-                            var currentTime = Date.now();
-                            var newPath = [];
-                            var newTimestamps = [];
-                            const indexToMilliseconds = [0, 15000, 30000, 60000, 120000, 300000];
-                                            var settingIndex = QGroundControl.settingsManager.flyViewSettings.trajectoryLineDuration.rawValue;
-                                            var durationFromSettings = settingIndex < indexToMilliseconds.length ? indexToMilliseconds[settingIndex] : 0;
-                                            //console.log("Duration from settings in milliseconds:", durationFromSettings);
+        Timer {
+            id: cleanupTimer
+            interval: 5000
+            repeat: true
+            running: true
+            onTriggered: {
+                var settingIndex = QGroundControl.settingsManager.flyViewSettings.trajectoryLineDuration.rawValue;
+                const indexToMilliseconds = [0, 15000, 30000, 60000, 120000, 300000];
+                var durationFromSettings = settingIndex < indexToMilliseconds.length ? indexToMilliseconds[settingIndex] : 0;
 
-                                            for (var i = 0; i < pointTimestamps.length; i++) {
-                                                // If duration is 0 (keep forever), skip the time check
-                                                // Otherwise, check if the point is within the retention period
-                                                if (durationFromSettings === 0 || currentTime - pointTimestamps[i] <= durationFromSettings) {
-                                                    newPath.push(trajectoryPolyline.path[i]);
-                                                    newTimestamps.push(pointTimestamps[i]);
-                                }
-                            }
-                                            trajectoryPolyline.path = newPath;
-                                                            pointTimestamps = newTimestamps;
-                                                        }
-                                                    }
+                // If keeping forever, do nothing — don't rebuild arrays
+                if (durationFromSettings === 0)
+                    return;
+
+                var currentTime = Date.now();
+                var cutoffTime = currentTime - durationFromSettings;
+
+                // Find first point that's within retention (timestamps are monotonic)
+                var firstKeepIndex = 0;
+                for (var i = 0; i < pointTimestamps.length; i++) {
+                    if (pointTimestamps[i] >= cutoffTime) {
+                        firstKeepIndex = i;
+                        break;
+                    }
+                    // If we reach the end, all points are expired
+                    if (i === pointTimestamps.length - 1) {
+                        firstKeepIndex = pointTimestamps.length;
+                    }
+                }
+
+                // Nothing to remove — skip the expensive path reassignment
+                if (firstKeepIndex === 0)
+                    return;
+
+                // Slice instead of rebuilding element by element
+                pointTimestamps = pointTimestamps.slice(firstKeepIndex);
+                trajectoryPolyline.path = trajectoryPolyline.path.slice(firstKeepIndex);
+            }
+        }
     }
 
     // Add the vehicles to the map
