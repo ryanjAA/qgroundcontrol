@@ -36,14 +36,14 @@ jobs:
           git fetch --all --tags -f --no-recurse-submodules
 
       - name: Install Qt
-        uses: jurplel/install-qt-action@v3
+        uses: jurplel/install-qt-action@v4
         with:
           version:      ${{ env.QT_VERSION }}
           host:         mac
           target:       desktop
           dir:          ${{ runner.temp }}
           modules:      qtcharts
-          setup-python: false
+          setup-python: true
 
       - name: Install Gstreamer
         run: |
