@@ -1179,8 +1179,8 @@ private:
     bool            _altitudeMessageAvailable               = false;
     double          _defaultCruiseSpeed = qQNaN();
     double          _defaultHoverSpeed = qQNaN();
-    int             _telemetryRRSSI = 0;
-    int             _telemetryLRSSI = 0;
+    int             _telemetryRRSSI = -120;
+    int             _telemetryLRSSI = -120;
     uint32_t        _telemetryRXErrors = 0;
     uint32_t        _telemetryFixed = 0;
     uint32_t        _telemetryTXBuffer = 0;

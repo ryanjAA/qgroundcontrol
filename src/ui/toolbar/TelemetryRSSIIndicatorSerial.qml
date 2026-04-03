@@ -28,7 +28,8 @@ Item {
 
     property bool showIndicator: true               ///AA make peristent
     property var  _activeVehicle:   QGroundControl.multiVehicleManager.activeVehicle
-    property bool _hasTelemetry:    _activeVehicle ? _activeVehicle.telemetryLRSSI !== 0 : false
+    //property bool _hasTelemetry:    _activeVehicle ? _activeVehicle.telemetryLRSSI !== 0 : false
+    property bool _hasTelemetry: _activeVehicle ? _activeVehicle.telemetryLRSSI > -120 : false //AA So that way no link aligns with -120
     property var _fadeMargin: QGroundControl.settingsManager.appSettings.fadeMargin
     property var _maxSensitivity: QGroundControl.settingsManager.appSettings.maxSensitivity
     property var _rssiWarning:  QGroundControl.settingsManager.appSettings.rssiWarning

@@ -1843,12 +1843,32 @@ void Vehicle::_handleRadioStatus(mavlink_message_t& message)
          */
         //rssi    = qMin(qMax(qRound(static_cast<qreal>(rssi)    / 1.9 - 127.0), - 120), 0);
         //remrssi = qMin(qMax(qRound(static_cast<qreal>(remrssi) / 1.9 - 127.0), - 120), 0);
-        rssi    = qMin(qMax(qRound(static_cast<qreal>(rssi)    / 2 - 152.0), - 120), 100);
-        remrssi = qMin(qMax(qRound(static_cast<qreal>(remrssi) / 2 - 152.0), - 120), 100);
+        rssi    = qMin(qMax(qRound(static_cast<qreal>(rssi)    / 2 - 152.0), - 120), 0);
+        remrssi = qMin(qMax(qRound(static_cast<qreal>(remrssi) / 2 - 152.0), - 120), 0);
     } else {
         rssi    = (int)(int8_t)rstatus.rssi;
         remrssi = (int)(int8_t)rstatus.remrssi;
     }
+
+    // --- AAGS change: treat exact 0 as "no radio/no signal".
+    // Some stacks report 0 when the module/cable isn't present.
+    // Mapping 0 -> -120 dBm ensures UI shows 0% instead of 100%.
+    //if (rstatus.rssi == 0)    rssi = -120;
+    //if (rstatus.remrssi == 0) remrssi = -120;
+
+    // Treat common "no data" sentinels as no-link
+    if (rstatus.rssi == 0 || rstatus.rssi == 255)       rssi = -120;
+    if (rstatus.remrssi == 0 || rstatus.remrssi == 255) remrssi = -120;
+
+    // If computed values are still 0, force to floor (prevents 0 dBm -> 100%)
+    if (rssi == 0)    rssi = -120;
+    if (remrssi == 0) remrssi = -120;
+
+    // Final clamp
+    rssi    = std::clamp(rssi,    -120, 0);
+    remrssi = std::clamp(remrssi, -120, 0);
+
+
     //-- Check for changes
     if(_telemetryLRSSI != rssi) {
         _telemetryLRSSI = rssi;
