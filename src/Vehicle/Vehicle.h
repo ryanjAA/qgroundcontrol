@@ -1042,6 +1042,9 @@ private slots:
     void _sendMessageMultipleNext           ();
     void _parametersReady                   (bool parametersReady);
     void _remoteControlRSSIChanged          (uint8_t rssi);
+    void _setRcRSSI                         (int rcRSSI);          // AA: centralized RC RSSI mutator; resets filter + ELRS channels on loss
+    bool _rcReceiverHealthy                 () const;              // AA: true when firmware doesn't advertise RC, or RC_RECEIVER bit is healthy
+    void _rcRSSIStaleTimeout                ();                    // AA: fires when no RC_CHANNELS for _rcLossTimeoutMSecs
     void _handleFlightModeChanged           (const QString& flightMode);
     void _announceArmedChanged              (bool armed);
     void _offlineCruiseSpeedSettingChanged  (QVariant value);
@@ -1169,10 +1172,12 @@ private:
     int             _currentNormalCount = 0;
     MessageType_t   _currentMessageType = MessageNone;
     int             _updateCount = 0;
-    int             _rcRSSI = 255;
-    int             _rcChannel16 = 0;       // AA: ELRS ch16
-    int             _rcChannel15 = 0;       // AA: ELRS ch15
-    double          _rcRSSIstore = 255;
+    int             _rcRSSI = 255;          // 255 = invalid/unknown
+    int             _rcChannel16 = -1;      // AA: ELRS ch16   (-1 = no valid sample)
+    int             _rcChannel15 = -1;      // AA: ELRS ch15   (-1 = no valid sample)
+    double          _rcRSSIstore = 255;     // low-pass filter state; 255 = uninitialized
+    QTimer          _rcLossTimer;           // AA: trips when RC_CHANNELS stops arriving
+    static constexpr int _rcLossTimeoutMSecs = 2000;
     bool            _flying = false;
     bool            _landing = false;
     bool            _vtolInFwdFlight = false;

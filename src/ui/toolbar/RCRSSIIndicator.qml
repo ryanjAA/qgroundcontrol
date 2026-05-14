@@ -47,40 +47,19 @@ Item {
     property var    _rcRSSIWarning:         QGroundControl.settingsManager.appSettings.rcRSSIWarning
     property var    _rcRSSIAlert:           QGroundControl.settingsManager.appSettings.rcRSSIAlert
     property bool   _rcpulser:              false
-    property bool _rcDataFresh:     false
-    property bool _rcSignalHealthy: _activeVehicle
-                                    ? (_activeVehicle.sensorsHealthBits & 65536)
-                                    : false
 
 
-   //-- Availability: ELRS mode just needs ch16 in range; normal mode uses existing logic
+    //-- Availability: Vehicle resets rcRSSI to 255 and rcChannel15/16 to -1 on RC
+    //   loss (staleness timeout or SYS_STATUS RC_RECEIVER unhealthy), so a plain
+    //   value-range check is sufficient and correct here.
     property bool _rcRSSIAvailable: _activeVehicle
                                     ? (_useElrsChannel
-                                       ? (_rcSignalHealthy && _ch16Raw >= 1000 && _ch16Raw <= 2000)
+                                       ? (_ch16Raw >= 1000 && _ch16Raw <= 2000)
                                        : (_activeVehicle.rcRSSI > 0 && _activeVehicle.rcRSSI <= 100))
                                     : false
 
-    Timer {
-        id:         rcStalenessTimer
-        interval:   2000    // 2 seconds - at 25Hz we should get a packet every 40ms
-        running:    _useElrsChannel && _activeVehicle
-        repeat:     false
-        onTriggered: _rcDataFresh = false
-    }
-
-    Connections {
-        target: _activeVehicle ? _activeVehicle : null
-        onRcChannel16Changed: {
-            _rcDataFresh = true
-            rcStalenessTimer.restart()
-        }
-    }
-
     function linkColor() {
-        if (!_activeVehicle) {
-            return qgcPal.buttonText;
-        } else if (!_rcRSSIAvailable) {
-                    // RC lost - flash red
+        if (!_activeVehicle || !_rcRSSIAvailable) {
                     return _rcpulser ? "red" : qgcPal.buttonText;
         } else if (_effectiveRSSI > _rcRSSIWarning.rawValue) {
             return "green";

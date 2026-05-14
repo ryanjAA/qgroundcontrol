@@ -204,6 +204,15 @@ Vehicle::Vehicle(LinkInterface*             link,
 
     connect(this, &Vehicle::remoteControlRSSIChanged,   this, &Vehicle::_remoteControlRSSIChanged);
 
+    // AA: RC loss detection. If RC_CHANNELS stops arriving, drop RSSI/channel state
+    // so the UI doesn't keep displaying the last-known value. The level check in
+    // _handleSysStatus + _remoteControlRSSIChanged covers the case where packets
+    // keep coming but RC is in failsafe.
+    _rcLossTimer.setSingleShot(true);
+    _rcLossTimer.setInterval(_rcLossTimeoutMSecs);
+    connect(&_rcLossTimer, &QTimer::timeout, this, &Vehicle::_rcRSSIStaleTimeout);
+
+
     _commonInit();
 
     _vehicleLinkManager->_addLink(link);
@@ -1473,6 +1482,13 @@ void Vehicle::_handleSysStatus(mavlink_message_t& message)
         emit sensorsHealthBitsChanged(_onboardControlSensorsHealth);
     }
 
+    // AA: RC_RECEIVER unhealthy → force RSSI to 0 immediately. _setRcRSSI no-ops
+    // when already 0, and _rcReceiverHealthy() treats "RC sensor not advertised"
+    // as healthy so non-PX4 setups aren't perma-unavailable.
+    if (!_rcReceiverHealthy()) {
+        _setRcRSSI(0);
+    }
+
     // ArduPilot firmare has a strange case when ARMING_REQUIRE=0. This means the vehicle is always armed but the motors are not
     // really powered up until the safety button is pressed. Because of this we can't depend on the heartbeat to tell us the true
     // armed (and dangerous) state. We must instead rely on SYS_STATUS telling us that the motors are enabled.
@@ -1942,13 +1958,16 @@ void Vehicle::_handleRCChannels(mavlink_message_t& message)
     emit rcChannelsChanged(channels.chancount, pwmValues);
 
 
-    // AA: Expose ch16 for ELRS RSSI - always emit to drive staleness timer
+    // AA: Expose ch16 for ELRS RSSI
     _rcChannel16 = pwmValues[15];
     emit rcChannel16Changed();
 
-    // AA: Expose ch15 for ELRS LQ - always emit to drive staleness timer
+    // AA: Expose ch15 for ELRS LQ
     _rcChannel15 = pwmValues[14];
     emit rcChannel15Changed();
+
+    // AA: Fresh RC_CHANNELS packet — reset the loss timeout.
+    _rcLossTimer.start();
 }
 
 // Pop warnings ignoring for mavlink headers for both GCC/Clang and MSVC
@@ -2558,28 +2577,65 @@ void Vehicle::_imageProtocolImageReady(void)
 
 void Vehicle::_remoteControlRSSIChanged(uint8_t rssi)
 {
-    //-- 0 <= rssi <= 100 - 255 means "invalid/unknown"
-    if(rssi > 100) { // Anything over 100 doesn't make sense
-        if(_rcRSSI != 255) {
-            _rcRSSI = 255;
-            emit rcRSSIChanged(_rcRSSI);
-        }
+    // AA: If PX4 says RC_RECEIVER is unhealthy, ignore any rssi value we may still
+    // be receiving in RC_CHANNELS — RC is in failsafe.
+    if (!_rcReceiverHealthy()) {
+        _setRcRSSI(0);
         return;
     }
-    //-- Initialize it
-    if(_rcRSSIstore == 255.) {
+
+    //-- 0 <= rssi <= 100 - 255 means "invalid/unknown"
+    if (rssi > 100) { // Anything over 100 doesn't make sense
+        _setRcRSSI(255);
+        return;
+    }
+    //-- Initialize the low-pass filter on first sample or when re-arming after loss
+    if (_rcRSSIstore == 255. || (_rcRSSI == 0 && rssi > 0)) {
         _rcRSSIstore = (double)rssi;
     }
-    // Low pass to git rid of jitter
+    // Low pass to get rid of jitter
     _rcRSSIstore = (_rcRSSIstore * 0.9f) + ((float)rssi * 0.1);
     uint8_t filteredRSSI = (uint8_t)ceil(_rcRSSIstore);
-    if(_rcRSSIstore < 0.1) {
+    if (_rcRSSIstore < 0.1) {
         filteredRSSI = 0;
     }
-    if(_rcRSSI != filteredRSSI) {
-        _rcRSSI = filteredRSSI;
+    _setRcRSSI(filteredRSSI);
+}
+
+// AA: Centralized RC RSSI setter. When entering a "lost/unknown" state (0 or 255)
+// we also clear the ELRS channel sentinels so the QML's value-range check naturally
+// shows "unavailable" for both normal and ELRS paths — no view-side health logic.
+void Vehicle::_setRcRSSI(int rcRSSI)
+{
+    if (rcRSSI == 0 || rcRSSI == 255) {
+        _rcRSSIstore = 255;  // mark filter uninitialized so reconnect doesn't ramp
+        if (_rcChannel16 != -1) {
+            _rcChannel16 = -1;
+            emit rcChannel16Changed();
+        }
+        if (_rcChannel15 != -1) {
+            _rcChannel15 = -1;
+            emit rcChannel15Changed();
+        }
+    }
+    if (_rcRSSI != rcRSSI) {
+        _rcRSSI = rcRSSI;
         emit rcRSSIChanged(_rcRSSI);
     }
+}
+
+// AA: Treat "RC sensor not advertised in SYS_STATUS" as healthy — some firmwares
+// never set the enabled bit, and we don't want them perma-unavailable. Otherwise
+// honor the health bit.
+bool Vehicle::_rcReceiverHealthy() const
+{
+    return !(_onboardControlSensorsEnabled & MAV_SYS_STATUS_SENSOR_RC_RECEIVER)
+         ||  (_onboardControlSensorsHealth  & MAV_SYS_STATUS_SENSOR_RC_RECEIVER);
+}
+
+void Vehicle::_rcRSSIStaleTimeout()
+{
+    _setRcRSSI(0);
 }
 
 void Vehicle::virtualTabletJoystickValue(double roll, double pitch, double yaw, double thrust)
