@@ -74,6 +74,7 @@ public:
     DEFINE_SETTINGFACT(rssiAlert)//AA added for Telem color based changes
     DEFINE_SETTINGFACT(rcRSSIWarning)//AA added for RC color based changes
     DEFINE_SETTINGFACT(rcRSSIAlert)//AA added for RC color based changes
+    DEFINE_SETTINGFACT(useElrsRssiChannel)  //AA ELRS ch16 RSSI mode
 
     // Although this is a global setting it only affects ArduPilot vehicle since PX4 automatically starts the stream from the vehicle side
     DEFINE_SETTINGFACT(apmStartMavlinkStreams)

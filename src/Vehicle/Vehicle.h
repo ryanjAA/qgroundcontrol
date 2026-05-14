@@ -183,6 +183,8 @@ public:
     Q_PROPERTY(bool                 joystickEnabled             READ joystickEnabled            WRITE setJoystickEnabled            NOTIFY joystickEnabledChanged)
     Q_PROPERTY(int                  flowImageIndex              READ flowImageIndex                                                 NOTIFY flowImageIndexChanged)
     Q_PROPERTY(int                  rcRSSI                      READ rcRSSI                                                         NOTIFY rcRSSIChanged)
+    Q_PROPERTY(int                  rcChannel16                 READ rcChannel16                                                    NOTIFY rcChannel16Changed)
+    Q_PROPERTY(int                  rcChannel15                 READ rcChannel15                                                    NOTIFY rcChannel15Changed)
     Q_PROPERTY(bool                 px4Firmware                 READ px4Firmware                                                    NOTIFY firmwareTypeChanged)
     Q_PROPERTY(bool                 apmFirmware                 READ apmFirmware                                                    NOTIFY firmwareTypeChanged)
     Q_PROPERTY(bool                 soloFirmware                READ soloFirmware               WRITE setSoloFirmware               NOTIFY soloFirmwareChanged)
@@ -604,6 +606,8 @@ public:
     float           longitude                   () { return static_cast<float>(_coordinate.longitude()); }
     bool            mavPresent                  () { return _mav != nullptr; }
     int             rcRSSI                      () const{ return _rcRSSI; }
+    int             rcChannel16                 () { return _rcChannel16; }  // AA: ELRS ch16
+    int             rcChannel15                 () { return _rcChannel16; }  // AA: ELRS ch15 (LQ
     bool            px4Firmware                 () const { return _firmwareType == MAV_AUTOPILOT_PX4; }
     bool            apmFirmware                 () const { return _firmwareType == MAV_AUTOPILOT_ARDUPILOTMEGA; }
     bool            genericFirmware             () const { return !px4Firmware() && !apmFirmware(); }
@@ -964,6 +968,8 @@ signals:
     void currentConfigChanged           ();
     void flowImageIndexChanged          ();
     void rcRSSIChanged                  (int rcRSSI);
+    void rcChannel16Changed             ();  // AA: ELRS ch16 (aka ELRS RSSI)
+    void rcChannel15Changed             ();  // AA: ELRS ch16 (aka ELRS LQ)
     void telemetryRRSSIChanged          (int value);
     void telemetryLRSSIChanged          (int value);
     void telemetryRXErrorsChanged       (unsigned int value);
@@ -1164,6 +1170,8 @@ private:
     MessageType_t   _currentMessageType = MessageNone;
     int             _updateCount = 0;
     int             _rcRSSI = 255;
+    int             _rcChannel16 = 0;       // AA: ELRS ch16
+    int             _rcChannel15 = 0;       // AA: ELRS ch15
     double          _rcRSSIstore = 255;
     bool            _flying = false;
     bool            _landing = false;

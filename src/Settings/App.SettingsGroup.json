@@ -401,6 +401,12 @@
                 "units":        "%",
                 "min":          0.0,
                 "max":          50.0
+            },
+            {
+                "name":         "useElrsRssiChannel",
+                "shortDesc":    "Use Alternate RC RSSI source",
+                "type":         "bool",
+                "default":      false
             }
 ]
 }

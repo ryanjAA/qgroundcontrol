@@ -180,7 +180,7 @@ DECLARE_SETTINGSFACT(AppSettings, rssiWarning) //AA
 DECLARE_SETTINGSFACT(AppSettings, rssiAlert) //AA
 DECLARE_SETTINGSFACT(AppSettings, rcRSSIWarning) //AA
 DECLARE_SETTINGSFACT(AppSettings, rcRSSIAlert) //AA
-
+DECLARE_SETTINGSFACT(AppSettings, useElrsRssiChannel)   //AA
 
 
 DECLARE_SETTINGSFACT_NO_FUNC(AppSettings, indoorPalette)

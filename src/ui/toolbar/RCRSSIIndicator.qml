@@ -24,33 +24,42 @@ Item {
     anchors.top:    parent.top
     anchors.bottom: parent.bottom
 
-    //property bool showIndicator: _activeVehicle.supportsRadio && _rcRSSIAvailable
     property bool showIndicator: _activeVehicle.supportsRadio && QGroundControl.settingsManager.appSettings.showRcRssiIndicator.rawValue //AA RC RSSI - Only if checkbox is enabled
 
 
+    property var    _activeVehicle:         QGroundControl.multiVehicleManager.activeVehicle
+    property bool   _useElrsChannel:        QGroundControl.settingsManager.appSettings.useElrsRssiChannel
+                                                ? QGroundControl.settingsManager.appSettings.useElrsRssiChannel.rawValue
+                                                : false
+
+    //-- ELRS: ch16 (index 15) scaled 1000-2000us -> 0-100%
+    property real   _ch16Raw:               (_activeVehicle && _useElrsChannel)
+                                                ? _activeVehicle.rcChannel16 : 0
+    property int    _elrsRSSI:              Math.min(100, Math.max(0, Math.round((_ch16Raw - 1000) / 10)))
+
+    property int    _elrsLQ:                Math.min(100, Math.max(0, Math.round((_activeVehicle ? _activeVehicle.rcChannel15 - 1000 : 0) / 10)))
 
 
-    property var    _activeVehicle:     QGroundControl.multiVehicleManager.activeVehicle
-    property bool   _rcRSSIAvailable:   _activeVehicle ? _activeVehicle.rcRSSI > 0 && _activeVehicle.rcRSSI <= 100 : false
-    //property bool   _rcRSSIAvailable:   _activeVehicle ? _activeVehicle.rcRSSI > 0 && _activeVehicle.rcRSSI <= 1000 : false //AA for testing
+    //-- Unified RSSI value: use ch16 when ELRS mode enabled, otherwise normal rcRSSI
+    property int    _effectiveRSSI:         _useElrsChannel ? _elrsRSSI : (_activeVehicle ? _activeVehicle.rcRSSI : 0)
 
-    //onShowIndicatorChanged: {
-      //  console.log("showIndicator changed:", showIndicator);
-    //}
+    //-- Availability: ELRS mode just needs ch16 in range; normal mode uses existing logic
+    property bool   _rcRSSIAvailable:       _activeVehicle
+                                                ? (_useElrsChannel
+                                                    ? (_ch16Raw >= 1000 && _ch16Raw <= 2000)
+                                                    : (_activeVehicle.rcRSSI > 0 && _activeVehicle.rcRSSI <= 100))
+                                                : false
 
-    property var _rcRSSIWarning:  QGroundControl.settingsManager.appSettings.rcRSSIWarning
-    property var _rcRSSIAlert:  QGroundControl.settingsManager.appSettings.rcRSSIAlert
-    property bool _rcpulser: false // Switches on/off at 1Hz, used to flash rssi icon on alert
+    property var _rcRSSIWarning:    QGroundControl.settingsManager.appSettings.rcRSSIWarning
+    property var _rcRSSIAlert:      QGroundControl.settingsManager.appSettings.rcRSSIAlert
+    property bool _rcpulser:        false
 
     function linkColor() {
-        if (!_activeVehicle || _activeVehicle.rcRSSI > 100) {
-            // -1 is used for invalid/missing data,
-            // and positive numbers are not expected/valid here,
-            // so for these numbers we use the default/old color.
+        if (!_activeVehicle || _effectiveRSSI > 100) {
             return qgcPal.buttonText;
-        } else if (_activeVehicle.rcRSSI > _rcRSSIWarning.rawValue) {
+        } else if (_effectiveRSSI > _rcRSSIWarning.rawValue) {
             return "green";
-        } else if (_activeVehicle.rcRSSI > _rcRSSIAlert.rawValue) {
+        } else if (_effectiveRSSI > _rcRSSIAlert.rawValue) {
             return "orange";
         } else {
             return _rcpulser ? "red" : qgcPal.buttonText;
@@ -81,7 +90,13 @@ Item {
 
                 QGCLabel {
                     id:             rssiLabel
-                    text:           _activeVehicle ? (_activeVehicle.rcRSSI !== 255 ? qsTr("RC Signal Strength Status") : qsTr("RC Signal Strength Unavailable")) : qsTr("N/A", "No data available")
+                    text:           _activeVehicle
+                                                            ? (_activeVehicle.rcRSSI !== 255
+                                                                ? (_useElrsChannel
+                                                                    ? qsTr("RC Signal Strength (ELRS Ch16)")
+                                                                    : qsTr("RC Signal Strength Status"))
+                                                                : qsTr("RC Signal Strength Unavailable"))
+                                                            : qsTr("N/A", "No data available")
                     font.family:    ScreenTools.demiboldFontFamily
                     anchors.horizontalCenter: parent.horizontalCenter
                 }
@@ -95,7 +110,14 @@ Item {
                     anchors.horizontalCenter: parent.horizontalCenter
 
                     QGCLabel { text: qsTr("RSSI:") }
-                    QGCLabel { text: _activeVehicle ? (_activeVehicle.rcRSSI + "%") : 0 }
+                    QGCLabel { text: _activeVehicle ? (_effectiveRSSI + "%") : "0%" }
+
+                                        QGCLabel { visible: _useElrsChannel; text: qsTr("Link Quality:") }
+                                        QGCLabel { visible: _useElrsChannel; text: _elrsLQ + "%" }
+
+                                        //-- Show raw ch16 us value when in ELRS mode for debugging
+                                        //QGCLabel { visible: _useElrsChannel; text: qsTr("Ch16 (µs):") }
+                                        //QGCLabel { visible: _useElrsChannel; text: _useElrsChannel ? _ch16Raw : "" }
                 }
             }
         }
@@ -116,14 +138,13 @@ Item {
             source:             "/qmlimages/RC.svg"
             fillMode:           Image.PreserveAspectFit
             opacity:            _rcRSSIAvailable ? 1 : 1
-            //color:              qgcPal.buttonText
             color:              linkColor()
         }
 
         SignalStrength {
             anchors.verticalCenter: parent.verticalCenter
             size:                   parent.height * 0.5
-            percent:                _rcRSSIAvailable ? _activeVehicle.rcRSSI : 0
+            percent:                _rcRSSIAvailable ? _effectiveRSSI : 0
         }
     }
 
@@ -133,4 +154,20 @@ Item {
             mainWindow.showIndicatorPopup(_root, rcRSSIInfo)
         }
     }
+    Component.onCompleted: {
+            console.log("useElrsChannel:", _useElrsChannel)
+            console.log("rcRSSI:", _activeVehicle ? _activeVehicle.rcRSSI : "no vehicle")
+            console.log("rcChannel16:", _activeVehicle ? _activeVehicle.rcChannel16 : "no vehicle")
+            console.log("rcRSSIAvailable:", _rcRSSIAvailable)
+            console.log("effectiveRSSI:", _effectiveRSSI)
+        }
+
+        Connections {
+            target: QGroundControl.multiVehicleManager
+            onActiveVehicleChanged: {
+                console.log("Vehicle connected - rcChannel16:", _activeVehicle ? _activeVehicle.rcChannel16 : "no vehicle")
+                console.log("rcRSSIAvailable:", _rcRSSIAvailable)
+                console.log("effectiveRSSI:", _effectiveRSSI)
+            }
+        }
 }

@@ -1940,6 +1940,21 @@ void Vehicle::_handleRCChannels(mavlink_message_t& message)
 
     emit remoteControlRSSIChanged(channels.rssi);
     emit rcChannelsChanged(channels.chancount, pwmValues);
+
+
+    // AA: Expose ch16 for ELRS RSSI
+       int ch16 = pwmValues[15];
+       if (ch16 != _rcChannel16) {
+           _rcChannel16 = ch16;
+           emit rcChannel16Changed();
+       }
+
+   // AA: Expose ch15 for ELRS LQ
+        int ch15 = pwmValues[14];
+        if (ch15 != _rcChannel15) {
+           _rcChannel15 = ch15;
+           emit rcChannel15Changed();
+       }
 }
 
 // Pop warnings ignoring for mavlink headers for both GCC/Clang and MSVC
