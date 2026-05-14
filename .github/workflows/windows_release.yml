@@ -26,7 +26,6 @@ env:
   QT_VERSION:   5.15.2
   ARTIFACT:     AAGS-installer.exe
   GST_VERSION:  1.18.6
-  GSTREAMER_1_0_ROOT_MSVC_X86_64: C:\gstreamer\1.0\msvc_x86_64\
   BUILD_TYPE:   ${{ fromJSON('["DailyBuild", "StableBuild"]')[ github.ref_type == 'tag' || contains(github.ref, 'Stable_' ) ] }}
 
 jobs:
@@ -45,7 +44,7 @@ jobs:
           git fetch --all --tags -f --depth 1
 
       - name: Install Qt
-        uses: jurplel/install-qt-action@v3
+        uses: jurplel/install-qt-action@v4
         with:
           version:      ${{ env.QT_VERSION }}
           host:         windows
@@ -81,61 +80,86 @@ jobs:
       - name: Install Gstreamer
         shell: pwsh
         run: |
+          $ErrorActionPreference = 'Stop'
           $runtime = "${{ runner.temp }}\gstreamer-1.0-msvc-x86_64-${{ env.GST_VERSION }}.msi"
           $devel   = "${{ runner.temp }}\gstreamer-1.0-devel-msvc-x86_64-${{ env.GST_VERSION }}.msi"
-          $gstBin  = "${{ env.GSTREAMER_1_0_ROOT_MSVC_X86_64 }}bin\gst-launch-1.0.exe"
+          $preferredDir = "C:\gstreamer\1.0\msvc_x86_64"
 
-          # Sanity-check the downloaded MSIs are non-empty
           foreach ($msi in @($runtime, $devel)) {
-            if (-not (Test-Path $msi)) { Write-Error "MSI missing: $msi"; exit 1 }
+            if (-not (Test-Path $msi)) { Write-Host "::error::MSI missing: $msi"; exit 1 }
             $size = (Get-Item $msi).Length
             Write-Host "MSI $msi : $size bytes"
-            if ($size -lt 1000000) { Write-Error "MSI suspiciously small: $msi"; exit 1 }
+            if ($size -lt 1000000) { Write-Host "::error::MSI suspiciously small: $msi"; exit 1 }
           }
 
           function Install-Msi($msi) {
             $log = "${{ runner.temp }}\$(Split-Path $msi -Leaf).log"
-            Write-Host "Installing $msi (log: $log)"
+            Write-Host "Installing $msi"
             $p = Start-Process -FilePath msiexec.exe `
-              -ArgumentList @("/package", $msi, "/passive", "ADDLOCAL=ALL", "/l*v", $log) `
+              -ArgumentList @("/i", $msi, "/qn", "ADDLOCAL=ALL", "/l*v", $log) `
               -Wait -PassThru
             Write-Host "msiexec exit code: $($p.ExitCode)"
             return $p.ExitCode
           }
 
-          $attempt = 0
-          $maxAttempts = 3
-          while ($attempt -lt $maxAttempts) {
-            $attempt++
-            Write-Host "=== Install attempt $attempt / $maxAttempts ==="
+          $gstBinExe = $null
+          for ($attempt = 1; $attempt -le 3; $attempt++) {
+            Write-Host "=== Install attempt $attempt / 3 ==="
             $rc1 = Install-Msi $runtime
             $rc2 = Install-Msi $devel
-            if ((Test-Path $gstBin) -and $rc1 -eq 0 -and $rc2 -eq 0) {
-              Write-Host "GStreamer installed successfully on attempt $attempt"
+
+            $candidates = @(
+              "$preferredDir\bin\gst-launch-1.0.exe",
+              "C:\Program Files\gstreamer\1.0\msvc_x86_64\bin\gst-launch-1.0.exe",
+              "C:\Program Files (x86)\gstreamer\1.0\msvc_x86_64\bin\gst-launch-1.0.exe"
+            )
+            $gstBinExe = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+
+            if (-not $gstBinExe) {
+              Write-Host "Not at preferred locations, searching..."
+              $match = Get-ChildItem `
+                -Path "C:\gstreamer","C:\Program Files","C:\Program Files (x86)" `
+                -Filter "gst-launch-1.0.exe" -Recurse -ErrorAction SilentlyContinue |
+                Select-Object -First 1
+              if ($match) { $gstBinExe = $match.FullName }
+            }
+
+            if ($gstBinExe -and $rc1 -eq 0 -and $rc2 -eq 0) {
+              Write-Host "Found: $gstBinExe"
               break
             }
-            Write-Warning "Attempt $attempt failed (rc1=$rc1, rc2=$rc2, gstBin exists=$((Test-Path $gstBin)))"
-            if ($attempt -lt $maxAttempts) {
-              Start-Sleep -Seconds 10
-            }
+
+            Write-Warning "Attempt $attempt failed (rc1=$rc1 rc2=$rc2 found=$gstBinExe)"
+            if ($attempt -lt 3) { Start-Sleep -Seconds 10 }
           }
 
-          if (-not (Test-Path $gstBin)) {
-            Write-Error "GStreamer install failed after $maxAttempts attempts. Dumping MSI logs:"
+          if (-not $gstBinExe) {
+            Write-Host "=== Full filesystem search ==="
+            Get-ChildItem -Path C:\ -Filter gst-launch-1.0.exe -Recurse -ErrorAction SilentlyContinue |
+              ForEach-Object { Write-Host "FOUND: $($_.FullName)" }
+            Write-Host "=== MSI logs (tail) ==="
             Get-ChildItem "${{ runner.temp }}\*.msi.log" | ForEach-Object {
               Write-Host "===== $($_.Name) ====="
-              Get-Content $_.FullName -Tail 200
+              Get-Content $_.FullName -Tail 300
             }
+            Write-Host "::error::GStreamer install failed"
             exit 1
           }
 
+          $gstBinDir = Split-Path $gstBinExe -Parent
+          $gstRoot   = Split-Path $gstBinDir -Parent
+
+          Write-Host "Detected GStreamer root: $gstRoot"
+          "GSTREAMER_1_0_ROOT_MSVC_X86_64=$gstRoot\" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+
       - name: Verify Gstreamer install
         run: |
-          dir "${{ env.GSTREAMER_1_0_ROOT_MSVC_X86_64 }}bin"
-          if not exist "${{ env.GSTREAMER_1_0_ROOT_MSVC_X86_64 }}bin\gst-launch-1.0.exe" exit /b 1
+          dir "%GSTREAMER_1_0_ROOT_MSVC_X86_64%\bin"
+          if not exist "%GSTREAMER_1_0_ROOT_MSVC_X86_64%\bin\gst-launch-1.0.exe" exit /b 1
 
       - name: Add Gstreamer to PATH
-        run: echo ${{ env.GSTREAMER_1_0_ROOT_MSVC_X86_64 }}bin>> %GITHUB_PATH%
+        run: echo %GSTREAMER_1_0_ROOT_MSVC_X86_64%\bin>> %GITHUB_PATH%
 
       - name: Create build directory
         run:  mkdir ${{ runner.temp }}\shadow_build_dir
@@ -151,17 +175,18 @@ jobs:
               qmake -r ${{ env.SOURCE_DIR }}\qgroundcontrol.pro CONFIG+=installer CONFIG+=${{ env.BUILD_TYPE }}
               ${{ runner.temp }}\jom\jom -j2
 
+
       - name: Bundle GStreamer runtime into staging
         working-directory: ${{ runner.temp }}\shadow_build_dir
         run: |
               if not exist staging\ ( echo ERROR: staging\ does not exist after build & exit /b 1 )
               if exist staging\${{ env.ARTIFACT }} del /f /q staging\${{ env.ARTIFACT }}
               echo Copying GStreamer runtime DLLs into staging\ ...
-              xcopy /Y /I "${{ env.GSTREAMER_1_0_ROOT_MSVC_X86_64 }}bin\*.dll" "staging\"
+              xcopy /Y /I "%GSTREAMER_1_0_ROOT_MSVC_X86_64%\bin\*.dll" "staging\"
               if errorlevel 1 ( echo ERROR: failed copying GStreamer bin DLLs & exit /b 1 )
               echo Copying GStreamer plugins into staging\gstreamer-plugins\ ...
               if not exist staging\gstreamer-plugins\ mkdir staging\gstreamer-plugins
-              xcopy /Y /I "${{ env.GSTREAMER_1_0_ROOT_MSVC_X86_64 }}lib\gstreamer-1.0\*.dll" "staging\gstreamer-plugins\"
+              xcopy /Y /I "%GSTREAMER_1_0_ROOT_MSVC_X86_64%\lib\gstreamer-1.0\*.dll" "staging\gstreamer-plugins\"
               if errorlevel 1 ( echo ERROR: failed copying GStreamer plugins & exit /b 1 )
               if not exist "staging\gstreamer-1.0-0.dll" ( echo ERROR: gstreamer-1.0-0.dll missing from staging & exit /b 1 )
               dir /b staging\gstreamer-plugins | findstr /i ".dll" >nul || ( echo ERROR: no plugin DLLs in staging\gstreamer-plugins & exit /b 1 )
