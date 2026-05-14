@@ -4,11 +4,18 @@ on:
   push:
     branches:
       - 'AAGS-4.3.0-2.0.4'
+    paths:
+      - '.github/workflows/windows_release.yml'
+      - 'src/**'
+      - 'custom/**'
+      - '*.pro'
+      - '*.pri'
     tags:
       - 'v*'
   pull_request:
     branches:
-    - '*'
+      - '*'
+  workflow_dispatch:
 
 defaults:
   run:
@@ -18,11 +25,13 @@ env:
   SOURCE_DIR:   ${{ github.workspace }}
   QT_VERSION:   5.15.2
   ARTIFACT:     AAGS-installer.exe
+  GST_VERSION:  1.18.6
+  GSTREAMER_1_0_ROOT_MSVC_X86_64: C:\gstreamer\1.0\msvc_x86_64\
   BUILD_TYPE:   ${{ fromJSON('["DailyBuild", "StableBuild"]')[ github.ref_type == 'tag' || contains(github.ref, 'Stable_' ) ] }}
 
 jobs:
   build:
-    runs-on:  windows-2019
+    runs-on:  windows-2022
 
     steps:
       - name: Checkout repo
@@ -60,19 +69,73 @@ jobs:
       - name: Download Gstreamer
         uses: suisei-cn/actions-download-file@v1.6.0
         with:
-          url:    https://s3-us-west-2.amazonaws.com/qgroundcontrol/dependencies/gstreamer-1.0-msvc-x86_64-1.18.1.msi
+          url:    https://gstreamer.freedesktop.org/pkg/windows/${{ env.GST_VERSION }}/msvc/gstreamer-1.0-msvc-x86_64-${{ env.GST_VERSION }}.msi
           target: ${{ runner.temp }}\
 
       - name: Download Gstreamer dev
         uses: suisei-cn/actions-download-file@v1.6.0
         with:
-          url:    https://s3-us-west-2.amazonaws.com/qgroundcontrol/dependencies/gstreamer-1.0-devel-msvc-x86_64-1.18.1.msi
+          url:    https://gstreamer.freedesktop.org/pkg/windows/${{ env.GST_VERSION }}/msvc/gstreamer-1.0-devel-msvc-x86_64-${{ env.GST_VERSION }}.msi
           target: ${{ runner.temp }}\
 
       - name: Install Gstreamer
-        run:  |
-            cmd /c start /wait msiexec /package ${{ runner.temp }}\gstreamer-1.0-msvc-x86_64-1.18.1.msi /passive ADDLOCAL=ALL
-            cmd /c start /wait msiexec /package ${{ runner.temp }}\gstreamer-1.0-devel-msvc-x86_64-1.18.1.msi /passive ADDLOCAL=ALL
+        shell: pwsh
+        run: |
+          $runtime = "${{ runner.temp }}\gstreamer-1.0-msvc-x86_64-${{ env.GST_VERSION }}.msi"
+          $devel   = "${{ runner.temp }}\gstreamer-1.0-devel-msvc-x86_64-${{ env.GST_VERSION }}.msi"
+          $gstBin  = "${{ env.GSTREAMER_1_0_ROOT_MSVC_X86_64 }}bin\gst-launch-1.0.exe"
+
+          # Sanity-check the downloaded MSIs are non-empty
+          foreach ($msi in @($runtime, $devel)) {
+            if (-not (Test-Path $msi)) { Write-Error "MSI missing: $msi"; exit 1 }
+            $size = (Get-Item $msi).Length
+            Write-Host "MSI $msi : $size bytes"
+            if ($size -lt 1000000) { Write-Error "MSI suspiciously small: $msi"; exit 1 }
+          }
+
+          function Install-Msi($msi) {
+            $log = "${{ runner.temp }}\$(Split-Path $msi -Leaf).log"
+            Write-Host "Installing $msi (log: $log)"
+            $p = Start-Process -FilePath msiexec.exe `
+              -ArgumentList @("/package", $msi, "/passive", "ADDLOCAL=ALL", "/l*v", $log) `
+              -Wait -PassThru
+            Write-Host "msiexec exit code: $($p.ExitCode)"
+            return $p.ExitCode
+          }
+
+          $attempt = 0
+          $maxAttempts = 3
+          while ($attempt -lt $maxAttempts) {
+            $attempt++
+            Write-Host "=== Install attempt $attempt / $maxAttempts ==="
+            $rc1 = Install-Msi $runtime
+            $rc2 = Install-Msi $devel
+            if ((Test-Path $gstBin) -and $rc1 -eq 0 -and $rc2 -eq 0) {
+              Write-Host "GStreamer installed successfully on attempt $attempt"
+              break
+            }
+            Write-Warning "Attempt $attempt failed (rc1=$rc1, rc2=$rc2, gstBin exists=$((Test-Path $gstBin)))"
+            if ($attempt -lt $maxAttempts) {
+              Start-Sleep -Seconds 10
+            }
+          }
+
+          if (-not (Test-Path $gstBin)) {
+            Write-Error "GStreamer install failed after $maxAttempts attempts. Dumping MSI logs:"
+            Get-ChildItem "${{ runner.temp }}\*.msi.log" | ForEach-Object {
+              Write-Host "===== $($_.Name) ====="
+              Get-Content $_.FullName -Tail 200
+            }
+            exit 1
+          }
+
+      - name: Verify Gstreamer install
+        run: |
+          dir "${{ env.GSTREAMER_1_0_ROOT_MSVC_X86_64 }}bin"
+          if not exist "${{ env.GSTREAMER_1_0_ROOT_MSVC_X86_64 }}bin\gst-launch-1.0.exe" exit /b 1
+
+      - name: Add Gstreamer to PATH
+        run: echo ${{ env.GSTREAMER_1_0_ROOT_MSVC_X86_64 }}bin>> %GITHUB_PATH%
 
       - name: Create build directory
         run:  mkdir ${{ runner.temp }}\shadow_build_dir
@@ -85,8 +148,40 @@ jobs:
       - name: Build
         working-directory: ${{ runner.temp }}\shadow_build_dir
         run:  |
-              qmake -r ${{ env.SOURCE_DIR }}\qgroundcontrol.pro CONFIG+=installer CONFIG+=${{ env. BUILD_TYPE }}
+              qmake -r ${{ env.SOURCE_DIR }}\qgroundcontrol.pro CONFIG+=installer CONFIG+=${{ env.BUILD_TYPE }}
               ${{ runner.temp }}\jom\jom -j2
+
+      - name: Bundle GStreamer runtime into staging
+        working-directory: ${{ runner.temp }}\shadow_build_dir
+        run: |
+              if not exist staging\ ( echo ERROR: staging\ does not exist after build & exit /b 1 )
+              if exist staging\${{ env.ARTIFACT }} del /f /q staging\${{ env.ARTIFACT }}
+              echo Copying GStreamer runtime DLLs into staging\ ...
+              xcopy /Y /I "${{ env.GSTREAMER_1_0_ROOT_MSVC_X86_64 }}bin\*.dll" "staging\"
+              if errorlevel 1 ( echo ERROR: failed copying GStreamer bin DLLs & exit /b 1 )
+              echo Copying GStreamer plugins into staging\gstreamer-plugins\ ...
+              if not exist staging\gstreamer-plugins\ mkdir staging\gstreamer-plugins
+              xcopy /Y /I "${{ env.GSTREAMER_1_0_ROOT_MSVC_X86_64 }}lib\gstreamer-1.0\*.dll" "staging\gstreamer-plugins\"
+              if errorlevel 1 ( echo ERROR: failed copying GStreamer plugins & exit /b 1 )
+              if not exist "staging\gstreamer-1.0-0.dll" ( echo ERROR: gstreamer-1.0-0.dll missing from staging & exit /b 1 )
+              dir /b staging\gstreamer-plugins | findstr /i ".dll" >nul || ( echo ERROR: no plugin DLLs in staging\gstreamer-plugins & exit /b 1 )
+
+      - name: Re-build NSIS installer with bundled GStreamer
+        working-directory: ${{ runner.temp }}\shadow_build_dir
+        run: |
+              "C:\Program Files (x86)\NSIS\makensis.exe" /DDRIVER_MSI="${{ env.SOURCE_DIR }}\deploy\windows\driver.msi" /DINSTALLER_ICON="${{ env.SOURCE_DIR }}\deploy\windows\WindowsQGC.ico" /DHEADER_BITMAP="${{ env.SOURCE_DIR }}\deploy\windows\installheader.bmp" /DAPPNAME="AAGS" /DEXENAME="AAGS" /DORGNAME="AppliedAeronautics" /DDESTDIR=staging /NOCD "/XOutFile staging\${{ env.ARTIFACT }}" "${{ env.SOURCE_DIR }}\deploy\windows\nullsoft_installer.nsi"
+              if not exist staging\${{ env.ARTIFACT }} ( echo ERROR: installer not produced & exit /b 1 )
+
+      - name: Verify installer bundled GStreamer
+        working-directory: ${{ runner.temp }}\shadow_build_dir
+        shell: powershell
+        run: |
+              $size = (Get-Item "staging\${{ env.ARTIFACT }}").Length
+              Write-Host "Installer size: $size bytes ($([math]::Round($size/1MB,1)) MB)"
+              if ($size -lt 50000000) {
+                Write-Error "Installer is under 50MB - GStreamer was likely NOT bundled"
+                exit 1
+              }
 
       - name: Save installer artifact
         uses: actions/upload-artifact@master
