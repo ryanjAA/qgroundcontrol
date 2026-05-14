@@ -607,7 +607,7 @@ public:
     bool            mavPresent                  () { return _mav != nullptr; }
     int             rcRSSI                      () const{ return _rcRSSI; }
     int             rcChannel16                 () { return _rcChannel16; }  // AA: ELRS ch16
-    int             rcChannel15                 () { return _rcChannel16; }  // AA: ELRS ch15 (LQ
+    int             rcChannel15                 () { return _rcChannel15; }  // AA: ELRS ch15 (LQ
     bool            px4Firmware                 () const { return _firmwareType == MAV_AUTOPILOT_PX4; }
     bool            apmFirmware                 () const { return _firmwareType == MAV_AUTOPILOT_ARDUPILOTMEGA; }
     bool            genericFirmware             () const { return !px4Firmware() && !apmFirmware(); }
