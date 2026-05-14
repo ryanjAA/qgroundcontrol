@@ -199,7 +199,7 @@ FlightMap {
             return
         }
         // We let FlightMap handle first vehicle position
-        if (!_keepMapCenteredOnVehicle && firstVehiclePositionReceived && _activeVehicleCoordinate.isValid && !_disableVehicleTracking) {
+        if (_keepMapCenteredOnVehicle && firstVehiclePositionReceived && _activeVehicleCoordinate.isValid && !_disableVehicleTracking) {
             if (_keepVehicleCentered) {
                 _root.center = _activeVehicleCoordinate
             } else {
