@@ -29,6 +29,7 @@ HEADERS += \
     $$PWD/BingMapProvider.h \
     $$PWD/GenericMapProvider.h \
     $$PWD/EsriMapProvider.h \
+    $$PWD/FAAMapProvider.h \
     $$PWD/MapboxMapProvider.h \
     $$PWD/QGCTileSet.h \
 
@@ -50,6 +51,7 @@ SOURCES += \
     $$PWD/BingMapProvider.cpp \
     $$PWD/GenericMapProvider.cpp \
     $$PWD/EsriMapProvider.cpp \
+    $$PWD/FAAMapProvider.cpp \
     $$PWD/MapboxMapProvider.cpp \
 
 OTHER_FILES += \

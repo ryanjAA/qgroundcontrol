@@ -89,6 +89,9 @@ UrlFactory::UrlFactory() : _timeout(5 * 1000) {
     _providersTable["LINZ Basemap"] = new LINZBasemapMapProvider(this);
 
     _providersTable["CustomURL Custom"] = new CustomURLMapProvider(this);
+
+    _providersTable["FAA VFR Sectional"] = new FAAVFRSectionalMapProvider(this);
+    _providersTable["FAA VFR Terminal"]  = new FAAVFRTerminalMapProvider(this);
 }
 
 void UrlFactory::registerProvider(QString name, MapProvider* provider) {

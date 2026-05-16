@@ -669,6 +669,47 @@ Rectangle {
                                 }
 
                                 QGCLabel {
+                                    text:       qsTr("VFR Chart Overlay")
+                                    width:      _labelWidth
+                                }
+                                FactCheckBox {
+                                    text:       qsTr("Show FAA sectional over map")
+                                    fact:       QGroundControl.settingsManager.flightMapSettings.vfrOverlayEnabled
+                                }
+
+                                QGCLabel {
+                                    text:       qsTr("VFR Chart Type")
+                                    width:      _labelWidth
+                                    enabled:    QGroundControl.settingsManager.flightMapSettings.vfrOverlayEnabled.rawValue
+                                }
+                                FactComboBox {
+                                    Layout.preferredWidth:  _comboFieldWidth
+                                    fact:                   QGroundControl.settingsManager.flightMapSettings.vfrOverlayType
+                                    indexModel:             false
+                                    enabled:                QGroundControl.settingsManager.flightMapSettings.vfrOverlayEnabled.rawValue
+                                }
+
+                                QGCLabel {
+                                    text:       qsTr("VFR Overlay Opacity")
+                                    width:      _labelWidth
+                                    enabled:    QGroundControl.settingsManager.flightMapSettings.vfrOverlayEnabled.rawValue
+                                }
+                                QGCSlider {
+                                    Layout.preferredWidth:  _comboFieldWidth
+                                    minimumValue:           QGroundControl.settingsManager.flightMapSettings.vfrOverlayOpacity.min
+                                    maximumValue:           QGroundControl.settingsManager.flightMapSettings.vfrOverlayOpacity.max
+                                    stepSize:               0.05
+                                    displayValue:           true
+                                    enabled:                QGroundControl.settingsManager.flightMapSettings.vfrOverlayEnabled.rawValue
+                                    value:                  QGroundControl.settingsManager.flightMapSettings.vfrOverlayOpacity.rawValue
+                                    onValueChanged: {
+                                        if (Math.abs(value - QGroundControl.settingsManager.flightMapSettings.vfrOverlayOpacity.rawValue) > 0.001) {
+                                            QGroundControl.settingsManager.flightMapSettings.vfrOverlayOpacity.rawValue = value
+                                        }
+                                    }
+                                }
+
+                                QGCLabel {
                                     text:                   qsTr("Stream GCS Position")
                                     visible:                _followTarget.visible
                                 }

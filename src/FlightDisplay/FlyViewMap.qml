@@ -254,6 +254,45 @@ FlightMap {
         }
     }
 
+    // FAA VFR aeronautical chart rendered as a translucent layer on top of the
+    // active base map. It is a second tiled Map (input-disabled) whose camera is
+    // bound to the base map; reuses the same tile engine so offline-cached tiles
+    // work here too.
+    Map {
+        id:             vfrOverlayMap
+        anchors.fill:   parent
+        z:              0
+        enabled:        false   // pass all gestures/clicks through to the base map
+        visible:        QGroundControl.settingsManager.flightMapSettings.vfrOverlayEnabled.rawValue && !pipMode
+        opacity:        QGroundControl.settingsManager.flightMapSettings.vfrOverlayOpacity.rawValue
+        plugin:         Plugin { name: "QGroundControl" }
+        gesture.enabled: false
+        color:          "transparent"
+
+        center:         _root.center
+        zoomLevel:      _root.zoomLevel
+        bearing:        _root.bearing
+        tilt:           _root.tilt
+        fieldOfView:    _root.fieldOfView
+
+        function updateVfrMapType() {
+            var want = QGroundControl.settingsManager.flightMapSettings.vfrOverlayType.value
+            for (var i = 0; i < vfrOverlayMap.supportedMapTypes.length; i++) {
+                if (vfrOverlayMap.supportedMapTypes[i].name === want) {
+                    vfrOverlayMap.activeMapType = vfrOverlayMap.supportedMapTypes[i]
+                    return
+                }
+            }
+        }
+
+        Component.onCompleted: updateVfrMapType()
+
+        Connections {
+            target:                 QGroundControl.settingsManager.flightMapSettings.vfrOverlayType
+            function onRawValueChanged() { vfrOverlayMap.updateVfrMapType() }
+        }
+    }
+
     MapFitFunctions {
         id:                         mapFitFunctions // The name for this id cannot be changed without breaking references outside of this code. Beware!
         map:                        _root

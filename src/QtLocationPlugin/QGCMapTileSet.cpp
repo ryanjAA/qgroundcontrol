@@ -330,11 +330,21 @@ QGCCachedTileSet::_networkReplyError(QNetworkReply::NetworkError error)
     if (!reply) {
         return;
     }
-    //-- Update error count
-    _errorCount++;
-    emit errorCountChanged();
     //-- Get tile hash
     QString hash = reply->request().attribute(QNetworkRequest::User).toString();
+    //-- The FAA chart caches genuinely have no tile outside chart coverage. A
+    //   404 there means "nothing to download here", not a failure, so don't
+    //   flag it as an error (otherwise an out-of-coverage area looks like a
+    //   wall of errors). Mark the tile complete so the set finishes cleanly.
+    const bool faaNoCoverage =
+        (error == QNetworkReply::ContentNotFoundError) &&
+        !hash.isEmpty() &&
+        getQGCMapEngine()->hashToType(hash).startsWith(QStringLiteral("FAA "));
+    if (!faaNoCoverage) {
+        //-- Update error count
+        _errorCount++;
+        emit errorCountChanged();
+    }
     qCDebug(QGCCachedTileSetLog) << "Error fetching tile" << reply->errorString();
     if(!hash.isEmpty()) {
         if(_replies.contains(hash)) {
@@ -342,10 +352,10 @@ QGCCachedTileSet::_networkReplyError(QNetworkReply::NetworkError error)
         } else {
             qWarning() << "QGCMapEngineManager::networkReplyError() Reply not in list: " << hash;
         }
-        if (error != QNetworkReply::OperationCanceledError) {
+        if (!faaNoCoverage && error != QNetworkReply::OperationCanceledError) {
             qWarning() << "QGCMapEngineManager::networkReplyError() Error:" << reply->errorString();
         }
-        QGCUpdateTileDownloadStateTask* task = new QGCUpdateTileDownloadStateTask(_id, QGCTile::StateError, hash);
+        QGCUpdateTileDownloadStateTask* task = new QGCUpdateTileDownloadStateTask(_id, faaNoCoverage ? QGCTile::StateComplete : QGCTile::StateError, hash);
         getQGCMapEngine()->addTask(task);
     } else {
         qWarning() << "QGCMapEngineManager::networkReplyError() Empty Hash";

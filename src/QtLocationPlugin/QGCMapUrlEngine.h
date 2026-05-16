@@ -23,6 +23,7 @@
 #include "EsriMapProvider.h"
 #include "MapboxMapProvider.h"
 #include "ElevationMapProvider.h"
+#include "FAAMapProvider.h"
 
 #define MAX_MAP_ZOOM (23.0)
 

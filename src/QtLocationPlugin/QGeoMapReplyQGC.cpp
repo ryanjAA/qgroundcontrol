@@ -177,7 +177,14 @@ QGeoTiledMapReplyQGC::networkReplyError(QNetworkReply::NetworkError error)
     } else {
         //-- Regular map tile
         if (error != QNetworkReply::OperationCanceledError) {
-            qWarning() << "Fetch tile error:" << _reply->errorString();
+            //-- FAA charts have no tile outside chart coverage; a 404 there is
+            //   expected, so don't spam the log for every out-of-coverage tile.
+            const bool faaNoCoverage =
+                (error == QNetworkReply::ContentNotFoundError) &&
+                getQGCMapEngine()->urlFactory()->getTypeFromId(tileSpec().mapId()).startsWith(QStringLiteral("FAA "));
+            if (!faaNoCoverage) {
+                qWarning() << "Fetch tile error:" << _reply->errorString();
+            }
             setError(QGeoTiledMapReply::CommunicationError, _reply->errorString());
         }
         setFinished(true);
