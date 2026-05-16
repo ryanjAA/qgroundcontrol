@@ -3,6 +3,7 @@ add_library(QtLocationPlugin
 	BingMapProvider.cpp
 	ElevationMapProvider.cpp
 	EsriMapProvider.cpp
+	FAAMapProvider.cpp
 	GenericMapProvider.cpp
 	GoogleMapProvider.cpp
 	MapboxMapProvider.cpp

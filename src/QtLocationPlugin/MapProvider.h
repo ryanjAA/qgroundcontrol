@@ -48,6 +48,12 @@ public:
     virtual bool _isElevationProvider() const { return false; }
     virtual bool _isBingProvider() const { return false; }
 
+    // Highest zoom level for which this provider actually has tiles. Default is
+    // effectively unbounded; providers backed by a fixed tile cache (e.g. the
+    // FAA aeronautical charts) override this so the renderer and the offline
+    // downloader don't request non-existent tiles.
+    virtual int maxZoomSupported() const { return 22; }
+
     virtual QGCTileSet getTileCount(const int zoom, const double topleftLon,
                                      const double topleftLat, const double bottomRightLon,
                                      const double bottomRightLat) const;

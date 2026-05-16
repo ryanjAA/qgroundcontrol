@@ -85,7 +85,9 @@ QGCMapEngineManager::updateForCurrentView(double lon0, double lat0, double lon1,
         QGCTileSet set = QGCMapEngine::getTileCount(z, lon0, lat0, lon1, lat1, mapName);
         _imageSet += set;
     }
-    if (_fetchElevation) {
+    // Elevation data is meaningless for (and cannot be co-downloaded with) the
+    // FAA aeronautical chart caches, so never include it for those.
+    if (_fetchElevation && !mapName.startsWith(QStringLiteral("FAA "))) {
         QGCTileSet set = QGCMapEngine::getTileCount(1, lon0, lat0, lon1, lat1, kElevationMapType);
         _elevationSet += set;
     }
@@ -161,7 +163,7 @@ QGCMapEngineManager::startDownload(const QString& name, const QString& mapType)
     } else {
         qWarning() <<  "QGCMapEngineManager::startDownload() No Tiles to save";
     }
-    if (mapType != kElevationMapType && _fetchElevation) {
+    if (mapType != kElevationMapType && _fetchElevation && !mapType.startsWith(QStringLiteral("FAA "))) {
         QGCCachedTileSet* set = new QGCCachedTileSet(name + " Elevation");
         set->setMapTypeStr(kElevationMapType);
         set->setTopleftLat(_topleftLat);
@@ -239,6 +241,17 @@ QGCMapEngineManager::mapTypeList(QString provider)
     mapList.replaceInStrings(QRegExp("^([^\\ ]*) (.*)$"),"\\2");
     mapList.removeDuplicates();
     return mapList;
+}
+
+//-----------------------------------------------------------------------------
+int
+QGCMapEngineManager::maxZoomForMapType(const QString& mapType)
+{
+    UrlFactory* urlFactory = getQGCMapEngine()->urlFactory();
+    MapProvider* provider = urlFactory->getMapProviderFromId(urlFactory->getIdFromType(mapType));
+    // Never raise the default ceiling for normal providers; only providers
+    // backed by a fixed tile cache report a lower value.
+    return provider ? qMin(20, provider->maxZoomSupported()) : 20;
 }
 
 //-----------------------------------------------------------------------------

@@ -60,7 +60,10 @@ Item {
     property bool   _tooManyTiles:      QGroundControl.mapEngineManager.tileCount > _maxTilesForDownload
 
     readonly property real minZoomLevel:    1
-    readonly property real maxZoomLevel:    20
+    // Some providers (e.g. FAA aeronautical charts) only have tiles up to a
+    // fixed zoom; cap the download sliders so the user can't queue thousands
+    // of non-existent tiles.
+    property real maxZoomLevel:    QGroundControl.mapEngineManager.maxZoomForMapType(mapType)
     readonly property real sliderTouchArea: ScreenTools.defaultFontPixelWidth * (ScreenTools.isTinyScreen ? 5 : (ScreenTools.isMobile ? 6 : 3))
 
     readonly property int _maxTilesForDownload: _settings ? _settings.maxTilesForDownload.rawValue : 0
@@ -109,6 +112,10 @@ Item {
         isMapInteractive = true
         mapType = _fmSettings.mapProvider.value + " " + _fmSettings.mapType.value
         resetMapToDefaults()
+        // Re-sync the preview explicitly: when mapType is unchanged from the
+        // previous set, onMapTypeChanged won't fire and the map would otherwise
+        // keep a stale (often satellite) activeMapType.
+        updateMap()
         handleChanges()
         _map.visible = true
         _tileSetList.visible = false
@@ -807,23 +814,21 @@ Item {
                             anchors.left:   parent.left
                             anchors.right:  parent.right
                             model:          QGroundControl.mapEngineManager.mapList
+                            // Keep the dropdown bound to mapType so the shown
+                            // value can never desync from what actually gets
+                            // downloaded (which also drives the elevation skip).
+                            currentIndex:   Math.max(0, mapCombo.find(mapType))
                             onActivated: {
                                 mapType = textAt(index)
-                            }
-                            Component.onCompleted: {
-                                var index = mapCombo.find(mapType)
-                                if (index === -1) {
-                                    console.warn("Active map name not in combo", mapType)
-                                } else {
-                                    mapCombo.currentIndex = index
-                                }
                             }
                         }
                         QGCCheckBox {
                             anchors.left:   parent.left
                             anchors.right:  parent.right
-                            text:           qsTr("Fetch elevation data")
-                            checked:        QGroundControl.mapEngineManager.fetchElevation
+                            // Elevation data does not apply to the FAA chart caches
+                            enabled:        mapType.indexOf("FAA ") !== 0
+                            text:           enabled ? qsTr("Fetch elevation data") : qsTr("N/A for FAA charts")
+                            checked:        enabled && QGroundControl.mapEngineManager.fetchElevation
                             onClicked: {
                                 QGroundControl.mapEngineManager.fetchElevation = checked
                                 handleChanges()
