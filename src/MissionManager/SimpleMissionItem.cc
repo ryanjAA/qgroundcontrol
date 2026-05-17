@@ -1043,6 +1043,7 @@ double SimpleMissionItem::additionalTimeDelay(void) const
     case MAV_CMD_NAV_WAYPOINT:
     case MAV_CMD_CONDITION_DELAY:
     case MAV_CMD_NAV_DELAY:
+    case MAV_CMD_NAV_LOITER_TIME:   // param1 holds the loiter duration in seconds
         return missionItem().param1();
     default:
         return 0;
@@ -1055,6 +1056,7 @@ void SimpleMissionItem::_possibleAdditionalTimeDelayChanged(void)
     case MAV_CMD_NAV_WAYPOINT:
     case MAV_CMD_CONDITION_DELAY:
     case MAV_CMD_NAV_DELAY:
+    case MAV_CMD_NAV_LOITER_TIME:
         emit additionalTimeDelayChanged();
         break;
     }
