@@ -520,6 +520,17 @@ QGCPopupDialog {
     ListModel { id: warningsModel }
 
     Component.onCompleted: {
+        // Two open paths:
+        //  - showPopupDialogFromComponent(comp, props): the QGCPopupDialog
+        //    Loader exposes a `dialogProperties` context object the component
+        //    reads itself (QGC convention, e.g. simpleMessageDialog).
+        //  - Component.createObject(parent, props).open(): props are assigned
+        //    directly, so `missionController` is already set (this fork's path).
+        // typeof guard keeps the dialogProperties reference safe when it does
+        // not exist (the createObject path).
+        if (!missionController && typeof dialogProperties !== "undefined" && dialogProperties)
+            missionController = dialogProperties.missionController
+
         // Prefer the aircraft's real battery capacity when connected so the
         // endurance/range estimates are accurate; otherwise fall back to the
         // manual pack selector.
