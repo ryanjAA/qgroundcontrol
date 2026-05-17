@@ -141,6 +141,52 @@ Rectangle {
                                                             property Fact _showPositionSetpointLine: QGroundControl.settingsManager.flyViewSettings.showPositionSetpointLine
                                                         }
 
+                            GridLayout {
+                                columns: 2
+
+                                QGCLabel {
+                                    text:       qsTr("Glide Ring")
+                                    visible:    glideRingModeCombo.visible
+                                }
+
+                                FactComboBox {
+                                    id:                     glideRingModeCombo
+                                    Layout.preferredWidth:  _valueFieldWidth
+                                    fact:                   QGroundControl.settingsManager.flyViewSettings.glideRingMode
+                                    indexModel:             false
+                                    visible:                QGroundControl.settingsManager.flyViewSettings.glideRingMode.visible
+                                }
+
+                                QGCLabel {
+                                    text:       qsTr("Glide Ratio")
+                                    visible:    glideRatioField.visible
+                                }
+
+                                FactTextField {
+                                    id:                     glideRatioField
+                                    Layout.preferredWidth:  _valueFieldWidth
+                                    fact:                   QGroundControl.settingsManager.flyViewSettings.glideRatio
+                                    visible:                QGroundControl.settingsManager.flyViewSettings.glideRatio.visible
+                                }
+
+                                RowLayout {
+                                    spacing:            ScreenTools.defaultFontPixelWidth * 0.5
+                                    Layout.columnSpan:  2
+
+                                    FactCheckBox {
+                                        text:       qsTr("Show Battery Range Ring")
+                                        fact:       QGroundControl.settingsManager.flyViewSettings.showBatteryRangeRing
+                                        visible:    QGroundControl.settingsManager.flyViewSettings.showBatteryRangeRing.visible
+                                    }
+
+                                    QGCButton {
+                                        text:       qsTr("?")
+                                        visible:    QGroundControl.settingsManager.flyViewSettings.showBatteryRangeRing.visible
+                                        onClicked:  mainWindow.showMessageDialog(qsTr("Battery Range Ring"), QGroundControl.settingsManager.flyViewSettings.showBatteryRangeRing.longDescription)
+                                    }
+                                }
+                            }
+
                             FactCheckBox {
                                 text:       qsTr("Show Telemetry Log Replay Status Bar")
                                 fact:       _showLogReplayStatusBar

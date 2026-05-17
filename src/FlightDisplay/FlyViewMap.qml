@@ -22,6 +22,7 @@ import QGroundControl.FlightMap     1.0
 import QGroundControl.Palette       1.0
 import QGroundControl.ScreenTools   1.0
 import QGroundControl.Vehicle       1.0
+import MAVLink                      1.0
 
 FlightMap {
     id:                         _root
@@ -55,7 +56,10 @@ FlightMap {
     property var    _flyViewSettings:           QGroundControl.settingsManager.flyViewSettings
     property bool   _keepMapCenteredOnVehicle:  _flyViewSettings.keepMapCenteredOnVehicle.rawValue
     property bool   _showPositionSetpointLine:  _flyViewSettings.showPositionSetpointLine.rawValue  //AA Added - setpoint line
-
+    property int    _glideRingMode:             _flyViewSettings.glideRingMode.rawValue
+    property real   _glideRatio:                _flyViewSettings.glideRatio.rawValue
+    property bool   _showBatteryRangeRing:      _flyViewSettings.showBatteryRangeRing.rawValue
+    property var    _batteryCapacityFact:       _activeVehicle && _activeVehicle.parameterManager && _activeVehicle.parameterManager.parametersReady ? _batteryCapacityParameter() : null
 
     property bool   _showMannedTrafficIndicators:     _flyViewSettings.showMannedTrafficIndicators.rawValue  //AA Added - Manned
     property var    _horizontalMannedConflictDistance: _flyViewSettings.horizontalMannedConflictDistance.value  //AA Added - Manned
@@ -215,6 +219,233 @@ FlightMap {
                 }
             }
         }
+    }
+
+    function _degreesToRadians(degrees) {
+        return degrees * Math.PI / 180
+    }
+
+    function _activeBattery() {
+        if (!_activeVehicle || !_activeVehicle.batteries || _activeVehicle.batteries.count === 0) {
+            return null
+        }
+        return _activeVehicle.batteries.get(0)
+    }
+
+    function _batteryCapacityParameter() {
+        if (!_activeVehicle || !_activeVehicle.parameterManager) {
+            return null
+        }
+        if (_activeVehicle.parameterManager.parameterExists(-1, "BAT1_CAPACITY")) {
+            return _activeVehicle.parameterManager.getParameter(-1, "BAT1_CAPACITY")
+        }
+        if (_activeVehicle.parameterManager.parameterExists(-1, "BATT_CAPACITY")) {
+            return _activeVehicle.parameterManager.getParameter(-1, "BATT_CAPACITY")
+        }
+        return null
+    }
+
+    function _batteryInFailsafe() {
+        var battery = _activeBattery()
+        if (!battery) {
+            return false
+        }
+        return battery.chargeState.rawValue === MAVLink.MAV_BATTERY_CHARGE_STATE_LOW ||
+                battery.chargeState.rawValue === MAVLink.MAV_BATTERY_CHARGE_STATE_CRITICAL ||
+                battery.chargeState.rawValue === MAVLink.MAV_BATTERY_CHARGE_STATE_EMERGENCY ||
+                battery.chargeState.rawValue === MAVLink.MAV_BATTERY_CHARGE_STATE_FAILED ||
+                battery.chargeState.rawValue === MAVLink.MAV_BATTERY_CHARGE_STATE_UNHEALTHY
+    }
+
+    function _vehicleInFailsafe() {
+        if (!_activeVehicle) {
+            return false
+        }
+        var mode = _activeVehicle.flightMode ? _activeVehicle.flightMode.toLowerCase() : ""
+        var latestError = _activeVehicle.latestError ? _activeVehicle.latestError.toLowerCase() : ""
+        return mode.indexOf("failsafe") !== -1 ||
+                mode.indexOf("fail safe") !== -1 ||
+                latestError.indexOf("failsafe") !== -1 ||
+                latestError.indexOf("fail safe") !== -1 ||
+                (_activeVehicle.vehicleLinkManager && _activeVehicle.vehicleLinkManager.communicationLost) ||
+                _batteryInFailsafe()
+    }
+
+    function _glideRingVisible() {
+        return !pipMode &&
+                _activeVehicle &&
+                _activeVehicleCoordinate.isValid &&
+                _glideRatio > 0 &&
+                !isNaN(_activeVehicle.altitudeRelative.rawValue) &&
+                _activeVehicle.altitudeRelative.rawValue > 0 &&
+                (_glideRingMode === 1 || (_glideRingMode === 2 && _vehicleInFailsafe()))
+    }
+
+    function _windVector() {
+        if (!_activeVehicle || !_activeVehicle.wind || isNaN(_activeVehicle.wind.speed.rawValue) || isNaN(_activeVehicle.wind.direction.rawValue)) {
+            return Qt.point(0, 0)
+        }
+        var speed = Math.max(0, _activeVehicle.wind.speed.rawValue)
+        var direction = _degreesToRadians(_activeVehicle.wind.direction.rawValue)
+        return Qt.point(Math.sin(direction) * speed, Math.cos(direction) * speed)
+    }
+
+    function _airSpeedForGlide() {
+        if (!_activeVehicle) {
+            return 0
+        }
+        if (!isNaN(_activeVehicle.airSpeed.rawValue) && _activeVehicle.airSpeed.rawValue > 1) {
+            return _activeVehicle.airSpeed.rawValue
+        }
+        if (!isNaN(_activeVehicle.groundSpeed.rawValue) && _activeVehicle.groundSpeed.rawValue > 1) {
+            return _activeVehicle.groundSpeed.rawValue
+        }
+        return 0
+    }
+
+    function _buildGlideRingPath() {
+        if (!_glideRingVisible()) {
+            return []
+        }
+        var altitude = _activeVehicle.altitudeRelative.rawValue
+        var stillAirDistance = altitude * _glideRatio
+        var airSpeed = _airSpeedForGlide()
+        var wind = _windVector()
+        var path = []
+        var stepDegrees = 5
+
+        if (airSpeed <= 0) {
+            for (var noWindBearing = 0; noWindBearing <= 360; noWindBearing += stepDegrees) {
+                path.push(_activeVehicleCoordinate.atDistanceAndAzimuth(stillAirDistance, noWindBearing))
+            }
+            return path
+        }
+
+        var glideTime = stillAirDistance / airSpeed
+        for (var bearing = 0; bearing <= 360; bearing += stepDegrees) {
+            var radians = _degreesToRadians(bearing)
+            var east = Math.sin(radians)
+            var north = Math.cos(radians)
+            var tailwind = wind.x * east + wind.y * north
+            var crosswind = -wind.x * north + wind.y * east
+            var groundSpeedAlongTrack = Math.sqrt(Math.max(0, airSpeed * airSpeed - crosswind * crosswind)) + tailwind
+            var distance = Math.max(0, groundSpeedAlongTrack * glideTime)
+            path.push(_activeVehicleCoordinate.atDistanceAndAzimuth(distance, bearing))
+        }
+        return path
+    }
+
+    function _batteryRemainingMah() {
+        var battery = _activeBattery()
+        if (!battery) {
+            return NaN
+        }
+
+        var consumed = battery.mahConsumed ? battery.mahConsumed.rawValue : NaN
+        var percent = battery.percentRemaining ? battery.percentRemaining.rawValue : NaN
+        var configuredCapacity = _batteryCapacityFact && !isNaN(_batteryCapacityFact.rawValue) ? _batteryCapacityFact.rawValue * 0.8 : NaN
+
+        if (!isNaN(configuredCapacity) && configuredCapacity > 0 && !isNaN(percent)) {
+            return configuredCapacity * Math.max(0, Math.min(percent, 100)) / 100
+        }
+        if (!isNaN(configuredCapacity) && configuredCapacity > 0 && !isNaN(consumed)) {
+            return Math.max(0, configuredCapacity - consumed)
+        }
+        if (!isNaN(consumed) && consumed > 0 && !isNaN(percent) && percent > 0 && percent < 100) {
+            var totalCapacity = consumed / (1 - (percent / 100))
+            return Math.max(0, totalCapacity - consumed)
+        }
+        return NaN
+    }
+
+    function _batteryRangeRadius() {
+        if (!_showBatteryRangeRing || !_activeVehicle || !_activeVehicleCoordinate.isValid) {
+            return 0
+        }
+        var battery = _activeBattery()
+        if (!battery || !battery.current || isNaN(battery.current.rawValue) || battery.current.rawValue <= 0) {
+            return 0
+        }
+        if (isNaN(_activeVehicle.groundSpeed.rawValue) || _activeVehicle.groundSpeed.rawValue <= 0) {
+            return 0
+        }
+
+        var remainingMah = _batteryRemainingMah()
+        if (isNaN(remainingMah) || remainingMah <= 0) {
+            return 0
+        }
+
+        var hoursRemaining = remainingMah / (battery.current.rawValue * 1000)
+        return Math.max(0, hoursRemaining * 3600 * _activeVehicle.groundSpeed.rawValue)
+    }
+
+    function _courseOverGround() {
+        if (_activeVehicle && _activeVehicle.gps && !isNaN(_activeVehicle.gps.courseOverGround.rawValue)) {
+            return _activeVehicle.gps.courseOverGround.rawValue
+        }
+        if (_activeVehicle && !isNaN(_activeVehicle.heading.rawValue)) {
+            return _activeVehicle.heading.rawValue
+        }
+        return 0
+    }
+
+    function _tailwindForBearing(wind, bearing) {
+        var radians = _degreesToRadians(bearing)
+        var east = Math.sin(radians)
+        var north = Math.cos(radians)
+        return wind.x * east + wind.y * north
+    }
+
+    function _batteryRangeSeconds() {
+        if (!_showBatteryRangeRing) {
+            return 0
+        }
+        var battery = _activeBattery()
+        if (!battery || !battery.current || isNaN(battery.current.rawValue) || battery.current.rawValue <= 0) {
+            return 0
+        }
+        var remainingMah = _batteryRemainingMah()
+        if (isNaN(remainingMah) || remainingMah <= 0) {
+            return 0
+        }
+        return (remainingMah / (battery.current.rawValue * 1000)) * 3600
+    }
+
+    function _buildBatteryRangePath() {
+        if (!_showBatteryRangeRing || !_activeVehicle || !_activeVehicleCoordinate.isValid) {
+            return []
+        }
+
+        var rangeSeconds = _batteryRangeSeconds()
+        if (rangeSeconds <= 0) {
+            return []
+        }
+
+        var baseGroundSpeed = !isNaN(_activeVehicle.groundSpeed.rawValue) && _activeVehicle.groundSpeed.rawValue > 0 ? _activeVehicle.groundSpeed.rawValue : _airSpeedForGlide()
+        var airSpeed = !isNaN(_activeVehicle.airSpeed.rawValue) && _activeVehicle.airSpeed.rawValue > 1 ? _activeVehicle.airSpeed.rawValue : 0
+        var wind = _windVector()
+        var path = []
+        var stepDegrees = 5
+
+        var windSpeed = Math.sqrt((wind.x * wind.x) + (wind.y * wind.y))
+        if (baseGroundSpeed <= 0 || (wind.x === 0 && wind.y === 0) || airSpeed <= 0 || windSpeed >= airSpeed) {
+            var radius = baseGroundSpeed > 0 ? baseGroundSpeed * rangeSeconds : _batteryRangeRadius()
+            if (radius <= 0) {
+                return []
+            }
+            for (var noWindBearing = 0; noWindBearing <= 360; noWindBearing += stepDegrees) {
+                path.push(_activeVehicleCoordinate.atDistanceAndAzimuth(radius, noWindBearing))
+            }
+            return path
+        }
+
+        var currentTailwind = _tailwindForBearing(wind, _courseOverGround())
+        for (var bearing = 0; bearing <= 360; bearing += stepDegrees) {
+            var groundSpeedAlongTrack = baseGroundSpeed + (_tailwindForBearing(wind, bearing) - currentTailwind)
+            var distance = Math.max(0, groundSpeedAlongTrack * rangeSeconds)
+            path.push(_activeVehicleCoordinate.atDistanceAndAzimuth(distance, bearing))
+        }
+        return path
     }
 
     on_ActiveVehicleCoordinateChanged: {
@@ -571,6 +802,25 @@ FlightMap {
         radius:         _horizontalUASConflictDistance
         center:         _activeVehicleCoordinate
         visible:        _showUASTrafficIndicators
+    }
+
+    MapPolygon {
+        path:           _buildGlideRingPath()
+        color:          "#3347a6ff"
+        border.color:   "#47a6ff"
+        border.width:   3
+        opacity:        0.85
+        visible:        _glideRingVisible()
+        z:              QGroundControl.zOrderMapItems + 1
+    }
+
+    MapPolygon {
+        path:           _buildBatteryRangePath()
+        color:          "transparent"
+        border.color:   "#35e07a"
+        border.width:   3
+        visible:        !pipMode && path.length > 0
+        z:              QGroundControl.zOrderMapItems + 1
     }
 
     GeoFenceMapVisuals {

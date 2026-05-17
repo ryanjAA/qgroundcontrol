@@ -54,6 +54,31 @@
     "default":      false
 },
 {
+    "name":             "glideRingMode",
+    "shortDesc":        "Glide ring",
+    "longDesc":         "Controls the wind-corrected glide reach overlay shown on the Fly View map.",
+    "type":             "uint32",
+    "enumStrings":      "Off,On,Failsafe",
+    "enumValues":       "0,1,2",
+    "default":          0
+},
+{
+    "name":             "glideRatio",
+    "shortDesc":        "Glide ratio",
+    "longDesc":         "Horizontal meters available per meter of altitude for the glide reach overlay.",
+    "type":             "double",
+    "default":          10.0,
+    "min":              1.0,
+    "decimalPlaces":    1
+},
+{
+    "name":             "showBatteryRangeRing",
+    "shortDesc":        "Show battery range ring",
+    "longDesc":         "Shows a projected range ring based on current power draw and remaining battery capacity. Range uses 80% of BAT1_CAPACITY as usable capacity. Wind correction uses aircraft airspeed and wind telemetry when available; otherwise current ground speed is used.",
+    "type":             "bool",
+    "default":          false
+},
+{
     "name":         "showSimpleCameraControl",
     "shortDesc":    "Show controls for camera triggering using MAV_CMD_DO_DIGICAM_CONTROL.",
     "type":         "bool",
