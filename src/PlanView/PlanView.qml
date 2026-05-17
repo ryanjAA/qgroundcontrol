@@ -102,6 +102,11 @@ Item {
     }
 
     Component {
+        id: altCalcDialogComponent
+        AltitudeParameterCalculator { }
+    }
+
+    Component {
         id: promptForPlanUsageOnVehicleChangePopupComponent
         QGCPopupDialog {
             title:      _planMasterController.managerVehicle.isOfflineEditingVehicle ? qsTr("Plan View - Vehicle Disconnected") : qsTr("Plan View - Vehicle Changed")
@@ -512,6 +517,7 @@ Item {
             readonly property int patternButtonIndex:   5
             readonly property int landButtonIndex:      6
             readonly property int centerButtonIndex:    7
+            readonly property int altCalcButtonIndex:   8
 
             property bool _isRallyLayer:    _editingLayer == _layerRallyPoints
             property bool _isMissionLayer:  _editingLayer == _layerMission
@@ -596,6 +602,15 @@ Item {
                         enabled:            true
                         visible:            true
                         dropPanelComponent: centerMapDropPanel
+                    },
+                    ToolStripAction {
+                        text:               qsTr("Alt Calc")
+                        iconSource:         "/qmlimages/Gears.svg"
+                        enabled:            true
+                        visible:            toolStrip._isMissionLayer
+                        onTriggered: {
+                            mainWindow.showPopupDialogFromComponent(altCalcDialogComponent, { missionController: _missionController })
+                        }
                     }
                 ]
             }
