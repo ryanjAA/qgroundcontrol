@@ -1,5 +1,5 @@
-# The 32 and 64 bit version of these actions should be kept in sync
-name: Android 32/64-bit Release
+# The 64 bit version of these actions should be kept in sync
+name: Android 64-bit Release
 
 on:
   push:
@@ -31,9 +31,6 @@ jobs:
     strategy:
       matrix:
        include:
-         - architecture: 32bits
-           eabi: armeabi-v7a
-           ARTIFACT: AAGS32.apk
          - architecture: 64bits
            eabi: arm64-v8a
            ARTIFACT: AAGS64.apk
