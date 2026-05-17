@@ -96,7 +96,19 @@ private slots:
     void updateGeometryImage();
 
 private:
+    /// Resource path of the bundled PX4 actuator metadata, used as a fallback
+    /// when the vehicle does not provide valid metadata (custom firmware, a
+    /// failed MAVLink-FTP fetch, or an incompatible metadata format).
+    static constexpr const char* kBundledMetadataResource = ":/json/PX4ActuatorsMetadata.json";
+
     bool parseJson(const QJsonDocument& json);
+
+    /// Returns true if the document has the sections parseJson() requires
+    /// (outputs_v1, functions_v1, mixer_v1).
+    static bool hasRequiredMetadataSections(const QJsonDocument& json);
+
+    /// Loads the bundled fallback metadata shipped in the application resources.
+    static QJsonDocument loadBundledMetadata();
 
     void updateActuatorActions();
 

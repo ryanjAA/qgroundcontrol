@@ -113,16 +113,63 @@ bool Actuators::isMultirotor() const
     return _mixer.configuredType() == "multirotor";
 }
 
+bool Actuators::hasRequiredMetadataSections(const QJsonDocument& json)
+{
+    if (json.isNull() || !json.isObject()) {
+        return false;
+    }
+    const QJsonObject obj = json.object();
+    // Require the sections to be present AND of the container type parseJson()
+    // expects. A missing key yields an Undefined value (not Null), and an
+    // incompatible metadata format may carry these keys with the wrong type;
+    // both must trigger the bundled fallback rather than a degenerate parse.
+    return obj.value("outputs_v1").isArray()
+        && obj.value("functions_v1").isObject()
+        && obj.value("mixer_v1").isObject();
+}
+
+QJsonDocument Actuators::loadBundledMetadata()
+{
+    QFile file(QString::fromLatin1(kBundledMetadataResource));
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qCWarning(ActuatorsConfigLog) << "Failed to open bundled actuator metadata resource"
+                                      << kBundledMetadataResource;
+        return {};
+    }
+    const QByteArray data = file.readAll();
+    file.close();
+    return QJsonDocument::fromJson(data);
+}
+
 void Actuators::load(const QString &json_file)
 {
-    QFile file;
-    file.setFileName(json_file);
-    file.open(QIODevice::ReadOnly | QIODevice::Text);
-    QString json_data = file.readAll();
-    file.close();
+    QJsonDocument doc;
+
+    if (!json_file.isEmpty()) {
+        QFile file(json_file);
+        if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            doc = QJsonDocument::fromJson(file.readAll());
+            file.close();
+        } else {
+            qCWarning(ActuatorsConfigLog) << "Failed to open actuator metadata file" << json_file;
+        }
+    }
+
+    // The vehicle may not provide actuator metadata at all (custom firmware that
+    // doesn't embed/advertise it, or a failed MAVLink-FTP fetch), or it may
+    // provide a document QGC can't parse (incompatible format). In all those
+    // cases fall back to the metadata bundled with the application so the
+    // Actuators UI still works. The airframe-specific configuration comes from
+    // the vehicle's CA_*/output parameters at runtime, not from this file, so a
+    // generic per-firmware-version metadata file is sufficient.
+    if (!hasRequiredMetadataSections(doc)) {
+        qCWarning(ActuatorsConfigLog) << "Actuator metadata from vehicle missing or invalid"
+                                      << "(file:" << json_file << "); using bundled fallback metadata";
+        doc = loadBundledMetadata();
+    }
 
     // store the metadata to be loaded later after all params are available
-    _jsonMetadata = QJsonDocument::fromJson(json_data.toUtf8());
+    _jsonMetadata = doc;
 }
 
 void Actuators::init()

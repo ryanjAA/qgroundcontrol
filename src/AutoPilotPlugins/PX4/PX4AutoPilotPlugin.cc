@@ -86,6 +86,13 @@ const QVariantList& PX4AutoPilotPlugin::vehicleComponents(void)
                 _powerComponent->setupTriggerSignals();
                 _components.append(QVariant::fromValue(static_cast<VehicleComponent*>(_powerComponent)));
 
+                if (!_vehicle->actuators()) {
+                    // The vehicle never delivered actuator metadata (custom firmware that
+                    // doesn't embed/advertise it, or a failed MAVLink-FTP fetch). Create
+                    // the Actuators object anyway with an empty filename so it loads the
+                    // bundled fallback metadata, ensuring the Actuators tab still shows.
+                    _vehicle->setActuatorsMetadata(_vehicle->defaultComponentId(), QString(), QString());
+                }
                 if (_vehicle->actuators()) {
                     _vehicle->actuators()->init(); // At this point params are loaded, so we can init the actuators
                 }
