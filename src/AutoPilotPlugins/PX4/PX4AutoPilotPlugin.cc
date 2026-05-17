@@ -91,7 +91,7 @@ const QVariantList& PX4AutoPilotPlugin::vehicleComponents(void)
                     // doesn't embed/advertise it, or a failed MAVLink-FTP fetch). Create
                     // the Actuators object anyway with an empty filename so it loads the
                     // bundled fallback metadata, ensuring the Actuators tab still shows.
-                    _vehicle->setActuatorsMetadata(_vehicle->defaultComponentId(), QString(), QString());
+                    _vehicle->setActuatorsMetadata(_vehicle->defaultComponentId(), QString());
                 }
                 if (_vehicle->actuators()) {
                     _vehicle->actuators()->init(); // At this point params are loaded, so we can init the actuators

@@ -83,7 +83,10 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $runtime = "${{ runner.temp }}\gstreamer-1.0-msvc-x86_64-${{ env.GST_VERSION }}.msi"
           $devel   = "${{ runner.temp }}\gstreamer-1.0-devel-msvc-x86_64-${{ env.GST_VERSION }}.msi"
-          $preferredDir = "C:\gstreamer\1.0\msvc_x86_64"
+          # Pin the install root explicitly so we never have to guess where it landed.
+          $installRoot = "C:\gstreamer"
+          $gstRoot     = "$installRoot\1.0\msvc_x86_64"
+          $gstLaunch   = "$gstRoot\bin\gst-launch-1.0.exe"
 
           foreach ($msi in @($runtime, $devel)) {
             if (-not (Test-Path $msi)) { Write-Host "::error::MSI missing: $msi"; exit 1 }
@@ -92,64 +95,75 @@ jobs:
             if ($size -lt 1000000) { Write-Host "::error::MSI suspiciously small: $msi"; exit 1 }
           }
 
+          function Dump-Log($log) {
+            if (Test-Path $log) {
+              Write-Host "===== $log (tail 300) ====="
+              Get-Content $log -Tail 300
+            } else {
+              Write-Host "(no MSI log at $log)"
+            }
+          }
+
           function Install-Msi($msi) {
             $log = "${{ runner.temp }}\$(Split-Path $msi -Leaf).log"
             Write-Host "Installing $msi"
+            # INSTALLDIR pins the location; /norestart so a pending reboot can't wedge CI.
             $p = Start-Process -FilePath msiexec.exe `
-              -ArgumentList @("/i", $msi, "/qn", "ADDLOCAL=ALL", "/l*v", $log) `
+              -ArgumentList @("/i", "`"$msi`"", "/qn", "/norestart",
+                              "ADDLOCAL=ALL", "INSTALLDIR=`"$installRoot`"",
+                              "/l*v", "`"$log`"") `
               -Wait -PassThru
-            Write-Host "msiexec exit code: $($p.ExitCode)"
-            return $p.ExitCode
+            $rc = $p.ExitCode
+            Write-Host "msiexec exit code: $rc"
+            # 0 = success, 3010 = success but reboot required (fine in CI). Anything
+            # else is a real failure -> surface the MSI log immediately, don't mask it.
+            if ($rc -ne 0 -and $rc -ne 3010) {
+              Write-Warning "msiexec failed for $msi (exit $rc)"
+              Dump-Log $log
+            }
+            return $rc
           }
 
-          $gstBinExe = $null
+          $ok = $false
           for ($attempt = 1; $attempt -le 3; $attempt++) {
             Write-Host "=== Install attempt $attempt / 3 ==="
             $rc1 = Install-Msi $runtime
             $rc2 = Install-Msi $devel
 
-            $candidates = @(
-              "$preferredDir\bin\gst-launch-1.0.exe",
-              "C:\Program Files\gstreamer\1.0\msvc_x86_64\bin\gst-launch-1.0.exe",
-              "C:\Program Files (x86)\gstreamer\1.0\msvc_x86_64\bin\gst-launch-1.0.exe"
-            )
-            $gstBinExe = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
-
-            if (-not $gstBinExe) {
-              Write-Host "Not at preferred locations, searching..."
-              $match = Get-ChildItem `
-                -Path "C:\gstreamer","C:\Program Files","C:\Program Files (x86)" `
-                -Filter "gst-launch-1.0.exe" -Recurse -ErrorAction SilentlyContinue |
-                Select-Object -First 1
-              if ($match) { $gstBinExe = $match.FullName }
+            $rcOk = ($rc1 -eq 0 -or $rc1 -eq 3010) -and ($rc2 -eq 0 -or $rc2 -eq 3010)
+            if (Test-Path $gstLaunch) {
+              if ($rcOk) { Write-Host "Found: $gstLaunch"; $ok = $true; break }
+              # File present but msiexec reported a hard error: trust the error.
+              Write-Warning "gst-launch present but msiexec failed (rc1=$rc1 rc2=$rc2)"
+            }
+            elseif ($rcOk) {
+              # The exact symptom we keep hitting: msiexec returns success but the
+              # tree is not there. Dump the runtime MSI log right now so the real
+              # cause is visible in the failing run instead of a vague message.
+              Write-Warning "msiexec reported success but $gstLaunch is missing"
+              Dump-Log "${{ runner.temp }}\$(Split-Path $runtime -Leaf).log"
+              Write-Host "=== Listing $installRoot ==="
+              if (Test-Path $installRoot) {
+                Get-ChildItem $installRoot -Recurse -ErrorAction SilentlyContinue |
+                  Select-Object -First 50 FullName | Format-Table -AutoSize | Out-String | Write-Host
+              } else {
+                Write-Host "(install root $installRoot does not exist)"
+              }
             }
 
-            if ($gstBinExe -and $rc1 -eq 0 -and $rc2 -eq 0) {
-              Write-Host "Found: $gstBinExe"
-              break
-            }
-
-            Write-Warning "Attempt $attempt failed (rc1=$rc1 rc2=$rc2 found=$gstBinExe)"
+            Write-Warning "Attempt $attempt failed (rc1=$rc1 rc2=$rc2 launch=$(Test-Path $gstLaunch))"
             if ($attempt -lt 3) { Start-Sleep -Seconds 10 }
           }
 
-          if (-not $gstBinExe) {
+          if (-not $ok) {
             Write-Host "=== Full filesystem search ==="
             Get-ChildItem -Path C:\ -Filter gst-launch-1.0.exe -Recurse -ErrorAction SilentlyContinue |
               ForEach-Object { Write-Host "FOUND: $($_.FullName)" }
-            Write-Host "=== MSI logs (tail) ==="
-            Get-ChildItem "${{ runner.temp }}\*.msi.log" | ForEach-Object {
-              Write-Host "===== $($_.Name) ====="
-              Get-Content $_.FullName -Tail 300
-            }
-            Write-Host "::error::GStreamer install failed"
+            Write-Host "::error::GStreamer install failed (see MSI log tail above)"
             exit 1
           }
 
-          $gstBinDir = Split-Path $gstBinExe -Parent
-          $gstRoot   = Split-Path $gstBinDir -Parent
-
-          Write-Host "Detected GStreamer root: $gstRoot"
+          Write-Host "GStreamer root: $gstRoot"
           "GSTREAMER_1_0_ROOT_MSVC_X86_64=$gstRoot\" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
 
