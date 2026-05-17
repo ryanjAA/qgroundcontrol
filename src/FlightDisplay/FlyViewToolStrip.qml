@@ -18,11 +18,13 @@ ToolStrip {
     title:  qsTr("Fly")
 
     signal displayPreFlightChecklist
+    signal displayAltCalc
 
     FlyViewToolStripActionList {
         id: flyViewToolStripActionList
 
         onDisplayPreFlightChecklist: _root.displayPreFlightChecklist()
+        onDisplayAltCalc:            _root.displayAltCalc()
     }
 
     model: flyViewToolStripActionList.model

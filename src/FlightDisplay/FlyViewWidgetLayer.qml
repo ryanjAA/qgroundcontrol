@@ -302,7 +302,7 @@ Item {
         visible:                !QGroundControl.videoManager.fullScreen
 
         onDisplayPreFlightChecklist: preFlightChecklistPopup.createObject(mainWindow).open()
-
+        onDisplayAltCalc:            altCalcPopup.createObject(mainWindow, { missionController: _missionController }).open()
 
         property real topEdgeLeftInset: visible ? y + height : 0
         property real leftEdgeTopInset: visible ? x + width : 0
@@ -332,6 +332,12 @@ Item {
     Component {
         id: preFlightChecklistPopup
         FlyViewPreFlightChecklistPopup {
+        }
+    }
+
+    Component {
+        id: altCalcPopup
+        AltitudeParameterCalculator {
         }
     }
 }

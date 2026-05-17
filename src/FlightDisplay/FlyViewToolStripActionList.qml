@@ -16,12 +16,18 @@ ToolStripActionList {
     id: _root
 
     signal displayPreFlightChecklist
+    signal displayAltCalc
 
     model: [
         ToolStripAction {
             text:           qsTr("Plan")
             iconSource:     "/qmlimages/Plan.svg"
             onTriggered:    mainWindow.showPlanView()
+        },
+        ToolStripAction {
+            text:           qsTr("Alt Calc")
+            iconSource:     "/qmlimages/Gears.svg"
+            onTriggered:    _root.displayAltCalc()
         },
         PreFlightCheckListShowAction { onTriggered: displayPreFlightChecklist() },
         GuidedActionTakeoff { },

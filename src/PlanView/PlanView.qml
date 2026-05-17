@@ -609,7 +609,7 @@ Item {
                         enabled:            true
                         visible:            toolStrip._isMissionLayer
                         onTriggered: {
-                            mainWindow.showPopupDialogFromComponent(altCalcDialogComponent, { missionController: _missionController })
+                            altCalcDialogComponent.createObject(mainWindow, { missionController: _missionController }).open()
                         }
                     }
                 ]
