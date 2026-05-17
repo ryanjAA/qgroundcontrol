@@ -12,8 +12,12 @@
 #include "ParameterManager.h"
 #include "SettingsManager.h"
 #include "AppSettings.h"
+#include "Vehicle.h"
+#include "ComponentInformationManager.h"
 
 #include <QStandardPaths>
+
+#include <memory>
 
 ParameterEditorController::ParameterEditorController(void)
     : _parameterMgr(_vehicle->parameterManager())
@@ -342,6 +346,28 @@ bool ParameterEditorController::buildDiffFromFile(const QString& filename)
 void ParameterEditorController::refresh(void)
 {
     _parameterMgr->refreshAllParameters();
+}
+
+void ParameterEditorController::pullMetadataFromVehicle(void)
+{
+    ComponentInformationManager* compInfoManager = _vehicle->compInfoManager();
+    if (!compInfoManager) {
+        return;
+    }
+
+    // Re-apply the freshly downloaded metadata to all already-loaded params
+    // once the re-pull finishes, then drop the connection (one-shot; the Qt 6
+    // Qt::SingleShotConnection isn't available on this Qt 5 build).
+    auto connection = std::make_shared<QMetaObject::Connection>();
+    *connection = connect(compInfoManager, &ComponentInformationManager::componentMetadataRefreshComplete,
+                          this, [this, connection]() {
+        QObject::disconnect(*connection);
+        _parameterMgr->reapplyMetadataToAllFacts();
+        qgcApp()->showAppMessage(tr("Finished pulling parameter metadata from the vehicle."));
+    });
+
+    qgcApp()->showAppMessage(tr("Pulling parameter metadata from the vehicle, this may take a moment..."));
+    compInfoManager->refreshComponentMetadata();
 }
 
 void ParameterEditorController::resetAllToDefaults(void)

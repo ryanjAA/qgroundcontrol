@@ -89,6 +89,31 @@ void ComponentInformationManager::requestAllComponentInformation(RequestAllCompl
     emit progressUpdate(progress());
 }
 
+void ComponentInformationManager::refreshComponentMetadata(void)
+{
+    // Don't disturb a fetch that is genuinely in flight (the on-connect run, or
+    // a previous manual refresh).
+    if (_refreshInProgress || _requestTypeStateMachine.active()) {
+        qCDebug(ComponentInformationManagerLog) << "refreshComponentMetadata: fetch already in progress, ignoring";
+        return;
+    }
+
+    // The outer state machine is one-shot: after the on-connect run _stateIndex
+    // is left at the end and never reset, so re-running requires resetting it.
+    _refreshInProgress  = true;
+    _active             = false;
+    _stateIndex         = -1;
+    qCDebug(ComponentInformationManagerLog) << "refreshComponentMetadata: re-pulling component metadata from vehicle";
+    requestAllComponentInformation(&ComponentInformationManager::_refreshCompleteCallback, this);
+}
+
+void ComponentInformationManager::_refreshCompleteCallback(void* requestAllCompleteFnData)
+{
+    ComponentInformationManager* self = static_cast<ComponentInformationManager*>(requestAllCompleteFnData);
+    self->_refreshInProgress = false;
+    emit self->componentMetadataRefreshComplete();
+}
+
 void ComponentInformationManager::_stateRequestCompInfoGeneral(StateMachine* stateMachine)
 {
     ComponentInformationManager* compMgr = static_cast<ComponentInformationManager*>(stateMachine);

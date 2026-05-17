@@ -106,6 +106,10 @@ Item {
             onTriggered:	controller.refresh()
         }
         QGCMenuItem {
+            text:           qsTr("Pull Metadata from Vehicle")
+            onTriggered:    controller.pullMetadataFromVehicle()
+        }
+        QGCMenuItem {
             text:           qsTr("Reset all to firmware's defaults")
             onTriggered:    mainWindow.showMessageDialog(qsTr("Reset All"),
                                                          qsTr("Select Reset to reset all parameters to their defaults.\n\nNote that this will also completely reset everything, including UAVCAN nodes, all vehicle settings, setup and calibrations."),

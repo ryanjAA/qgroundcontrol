@@ -90,6 +90,15 @@ public:
     typedef void (*RequestAllCompleteFn)(void* requestAllCompleteFnData);
 
     void                requestAllComponentInformation  (RequestAllCompleteFn requestAllCompletFn, void * requestAllCompleteFnData);
+
+    /// Re-run the component information fetch on demand (the state machine is
+    /// otherwise one-shot, run once on connect). Used to manually re-pull
+    /// metadata from the vehicle, e.g. when the firmware was flashed from a
+    /// different GCS so this one never received parameter metadata.
+    /// Emits componentMetadataRefreshComplete() when done. No-op if a fetch is
+    /// already in flight.
+    void                refreshComponentMetadata        (void);
+
     Vehicle*            vehicle                         (void) { return _vehicle; }
     CompInfoParam*      compInfoParam                   (uint8_t compId);
     CompInfoGeneral*    compInfoGeneral                 (uint8_t compId);
@@ -107,8 +116,11 @@ public:
 
 signals:
     void progressUpdate(float progress);
+    void componentMetadataRefreshComplete(void);
 
 private:
+    static void _refreshCompleteCallback(void* requestAllCompleteFnData);
+
     void _stateRequestCompInfoComplete  (void);
     bool _isCompTypeSupported           (COMP_METADATA_TYPE type);
     void _updateAllUri                  ();
@@ -127,6 +139,7 @@ private:
     RequestAllCompleteFn            _requestAllCompleteFn       = nullptr;
     void*                           _requestAllCompleteFnData   = nullptr;
     QGCCachedFileDownload*          _cachedFileDownload         = nullptr;
+    bool                            _refreshInProgress          = false;
     ComponentInformationCache&      _fileCache;
     ComponentInformationTranslation* _translation               = nullptr;
 

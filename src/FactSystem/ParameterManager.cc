@@ -214,6 +214,26 @@ void ParameterManager::mavlinkMessageReceived(mavlink_message_t message)
     }
 }
 
+void ParameterManager::reapplyMetadataToAllFacts(void)
+{
+    int factCount = 0;
+    for (int componentId : _mapCompId2FactMap.keys()) {
+        CompInfoParam* compInfoParam = _vehicle->compInfoManager()->compInfoParam(componentId);
+        for (const QString& parameterName : _mapCompId2FactMap[componentId].keys()) {
+            Fact* fact = _mapCompId2FactMap[componentId][parameterName];
+            if (!fact) {
+                continue;
+            }
+            // Mirrors the association done in _handleParamValue() when a fact is
+            // first seen, but applied to facts that already exist.
+            FactMetaData* factMetaData = compInfoParam->factMetaDataForName(parameterName, fact->type());
+            fact->setMetaData(factMetaData);
+            ++factCount;
+        }
+    }
+    qCDebug(ParameterManagerLog) << "reapplyMetadataToAllFacts: re-applied metadata to" << factCount << "facts";
+}
+
 /// Called whenever a parameter is updated or first seen.
 void ParameterManager::_handleParamValue(int componentId, QString parameterName, int parameterCount, int parameterIndex, MAV_PARAM_TYPE mavParamType, QVariant parameterValue)
 {

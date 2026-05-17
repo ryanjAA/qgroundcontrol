@@ -75,6 +75,11 @@ public:
     ///     @param name: Parameter name
     Q_INVOKABLE bool parameterExists(int componentId, const QString& paramName);
 
+    /// Re-applies the current parameter metadata (from ComponentInformationManager)
+    /// to every already-loaded Fact. Used after a manual metadata re-pull from
+    /// the vehicle so descriptions/units/enums update without a reconnect.
+    Q_INVOKABLE void reapplyMetadataToAllFacts(void);
+
     /// Returns all parameter names
     QStringList parameterNames(int componentId);
 

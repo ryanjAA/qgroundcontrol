@@ -66,6 +66,17 @@ void CompInfoParam::setJson(const QString& metadataJsonFileName)
         return;
     }
 
+    // Discard any previously parsed metadata so a re-pull from the vehicle
+    // replaces it rather than duplicating into the indexed list / leaking the
+    // old FactMetaData objects. Only done now that the new json validated, so a
+    // failed re-pull leaves the existing metadata intact.
+    qDeleteAll(_nameToMetaDataMap);
+    _nameToMetaDataMap.clear();
+    for (const RegexFactMetaDataPair_t& pair : _indexedNameMetaDataList) {
+        delete pair.second;
+    }
+    _indexedNameMetaDataList.clear();
+
     QJsonArray rgParameters = jsonObj[_jsonParametersKey].toArray();
     for (QJsonValue parameterValue: rgParameters) {
         QMap<QString, QString> emptyDefineMap;
