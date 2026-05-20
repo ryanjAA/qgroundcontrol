@@ -45,9 +45,9 @@ Item {
             } else if (_activeVehicle.telemetryLRSSI > _rssiWarning.rawValue) {
                 return qgcPal.colorGreen
             } else if (_activeVehicle.telemetryLRSSI > _rssiAlert.rawValue) {
-                return qgcPal.colorOrange
+                return "orange"
             } else {
-                return _pulser ? qgcPal.colorRed : qgcPal.buttonText
+                return _pulser ? "red" : qgcPal.buttonText
             }
         }
 
