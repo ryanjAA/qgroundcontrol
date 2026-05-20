@@ -24,11 +24,71 @@ Item {
     id:             _root
     anchors.top:    parent.top
     anchors.right:  parent.right
-    width:          tempIcon.width * 1.5 + 20 // Increased width to avoid overlap
+    // Size to actual content: icon + label + a right-side gap so the longer
+    // combined "xx/yy °C" string doesn't crowd the next toolbar indicator.
+    width:          tempIcon.width + tempLabel.implicitWidth + ScreenTools.defaultFontPixelWidth * 2
 
     property bool showIndicator: true
     property var _activeVehicle: QGroundControl.multiVehicleManager.activeVehicle
     property var _unitsSettings: QGroundControl.settingsManager.unitsSettings
+
+    // 1Hz pulser used to flash the icon/label red when ESC temp is critical.
+    property bool _pulser: false
+    Timer { interval: 500; running: true; repeat: true; onTriggered: _root._pulser = !_root._pulser }
+
+    // ESC thermal thresholds (Celsius — sensor publishes °C regardless of UI unit setting).
+    readonly property real _escTempCritC: 95
+    readonly property real _escTempWarnC: 80
+
+    function _isNum(v) { return v !== undefined && v !== null && !isNaN(v) }
+
+    function _extTempC() {
+        return (_activeVehicle && _activeVehicle.hygrometer && _activeVehicle.hygrometer.externalFuseTemp
+                && _isNum(_activeVehicle.hygrometer.externalFuseTemp.rawValue))
+               ? _activeVehicle.hygrometer.externalFuseTemp.rawValue : undefined
+    }
+    function _escTempC() {
+        return (_activeVehicle && _activeVehicle.hygrometer && _activeVehicle.hygrometer.escTemp
+                && _isNum(_activeVehicle.hygrometer.escTemp.rawValue))
+               ? _activeVehicle.hygrometer.escTemp.rawValue : undefined
+    }
+    function _pitotTempC() {
+        return (_activeVehicle && _activeVehicle.temperature && _activeVehicle.temperature.temperaturePressDiff
+                && _isNum(_activeVehicle.temperature.temperaturePressDiff.rawValue))
+               ? _activeVehicle.temperature.temperaturePressDiff.rawValue : undefined
+    }
+    function _autopilotTempC() {
+        return (_activeVehicle && _activeVehicle.temperature && _activeVehicle.temperature.temperature1
+                && _isNum(_activeVehicle.temperature.temperature1.rawValue))
+               ? _activeVehicle.temperature.temperature1.rawValue : undefined
+    }
+
+    function _unitSuffix() {
+        return _unitsSettings.temperatureUnits.value === UnitsSettings.TemperatureUnitsCelsius ? " °C" : " °F"
+    }
+
+    // Top-bar label per spec: ext/esc combined, else single ext, else single esc,
+    // else pitot, else autopilot, else "--".
+    function _iconLabelText() {
+        var ext = _extTempC(), esc = _escTempC()
+        if (_isNum(ext) && _isNum(esc)) {
+            return Math.round(convertTemperature(ext)) + "/" + Math.round(convertTemperature(esc)) + _unitSuffix()
+        }
+        if (_isNum(ext))                return formatTemperatureNoDecimal(ext)
+        if (_isNum(esc))                return formatTemperatureNoDecimal(esc)
+        if (_isNum(_pitotTempC()))      return formatTemperatureNoDecimal(_pitotTempC())
+        if (_isNum(_autopilotTempC())) return formatTemperatureNoDecimal(_autopilotTempC())
+        return formatTemperatureNoDecimal(undefined)
+    }
+
+    // Icon/label color driven by ESC temp. No ESC reading → neutral.
+    function _alertColor() {
+        var esc = _escTempC()
+        if (!_isNum(esc))           return qgcPal.text
+        if (esc >= _escTempCritC)   return _pulser ? "red" : qgcPal.text
+        if (esc >= _escTempWarnC)   return "orange"
+        return qgcPal.colorGreen
+    }
 
     function convertTemperature(tempCelsius) {
         return _unitsSettings.temperatureUnits.value === UnitsSettings.TemperatureUnitsCelsius
@@ -85,14 +145,31 @@ Item {
                     anchors.horizontalCenter: parent.horizontalCenter
 
                     QGCLabel {
-                        text: qsTr("External:")
+                        text: qsTr("External Temp:")
                     }
 
-                    // Full precision for external temperature
+                    // Full precision for external temperature (SHT3x @ 0x44)
                     QGCLabel {
-                        text: formatTemperature(_activeVehicle && _activeVehicle.hygrometer && _activeVehicle.hygrometer.hygroTemp
-                            ? _activeVehicle.hygrometer.hygroTemp.rawValue
+                        text: formatTemperature(_activeVehicle && _activeVehicle.hygrometer && _activeVehicle.hygrometer.externalFuseTemp
+                            ? _activeVehicle.hygrometer.externalFuseTemp.rawValue
                             : undefined)
+                    }
+
+                    // ESC Temp (SHT3x @ 0x45): only present once a value has arrived
+                    property bool _hasEscTemp: _activeVehicle && _activeVehicle.hygrometer && _activeVehicle.hygrometer.escTemp
+                                               && _activeVehicle.hygrometer.escTemp.rawValue !== undefined
+                                               && !isNaN(_activeVehicle.hygrometer.escTemp.rawValue)
+
+                    QGCLabel {
+                        text: qsTr("ESC Temp:")
+                        visible: tempGrid._hasEscTemp
+                    }
+
+                    QGCLabel {
+                        text: formatTemperature(_activeVehicle && _activeVehicle.hygrometer && _activeVehicle.hygrometer.escTemp
+                            ? _activeVehicle.hygrometer.escTemp.rawValue
+                            : undefined)
+                        visible: tempGrid._hasEscTemp
                     }
 
                     QGCLabel {
@@ -100,8 +177,8 @@ Item {
                     }
 
                     QGCLabel {
-                        text: formatHumidity(_activeVehicle && _activeVehicle.hygrometer && _activeVehicle.hygrometer.hygroHumi
-                            ? _activeVehicle.hygrometer.hygroHumi.rawValue
+                        text: formatHumidity(_activeVehicle && _activeVehicle.hygrometer && _activeVehicle.hygrometer.humidity
+                            ? _activeVehicle.hygrometer.humidity.rawValue
                             : undefined)
                     }
 
@@ -139,21 +216,15 @@ Item {
         sourceSize.height:  height
         source:             "/qmlimages/OAT.svg"
         fillMode:           Image.PreserveAspectFit
+        color:              _alertColor()
     }
 
     QGCLabel {
         id: tempLabel
         anchors.verticalCenter: tempIcon.verticalCenter
         anchors.left: tempIcon.right
-        // Use rounded temperature only for the label next to the icon
-        text: formatTemperatureNoDecimal(
-                  (_activeVehicle && _activeVehicle.hygrometer && _activeVehicle.hygrometer.hygroTemp && _activeVehicle.hygrometer.hygroTemp.rawValue !== undefined && !isNaN(_activeVehicle.hygrometer.hygroTemp.rawValue))
-                  ? _activeVehicle.hygrometer.hygroTemp.rawValue
-                  : (_activeVehicle && _activeVehicle.temperature && _activeVehicle.temperature.temperaturePressDiff && _activeVehicle.temperature.temperaturePressDiff.rawValue !== undefined && !isNaN(_activeVehicle.temperature.temperaturePressDiff.rawValue))
-                  ? _activeVehicle.temperature.temperaturePressDiff.rawValue
-                  : undefined
-              )
-        color: qgcPal.text
+        text: _iconLabelText()
+        color: _alertColor()
         font.family: ScreenTools.demiboldFontFamily
         visible: showIndicator
     }
