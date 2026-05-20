@@ -22,6 +22,12 @@ installer {
         QMAKE_POST_LINK += && install_name_tool -change /Library/Frameworks/GStreamer.framework/Versions/1.0/lib/GStreamer @executable_path/../Frameworks/GStreamer.framework/Versions/1.0/lib/GStreamer $${TARGET}.app/Contents/MacOS/$${TARGET}
         QMAKE_POST_LINK += && rm -rf $${TARGET}.app/Contents/Frameworks/GStreamer.framework/Versions/1.0/{bin,etc,share,Headers,include,Commands}
         QMAKE_POST_LINK += && rm -rf $${TARGET}.app/Contents/Frameworks/GStreamer.framework/Versions/1.0/lib/{*.a,*.la,glib-2.0,gst-validate-launcher,pkgconfig}
+        # Rewrite every /Library/Frameworks/GStreamer.framework/... reference inside
+        # the bundle to @executable_path/... — covers transitive deps (libz, libav*,
+        # internal cross-refs) that the single install_name_tool -change above misses.
+        # Without this, customers without a system GStreamer install crash at launch.
+        QMAKE_POST_LINK += && echo "Rewriting bundled GStreamer dylib paths"
+        QMAKE_POST_LINK += && bash $$SOURCE_DIR/tools/fix_gstreamer_paths_macos.sh $${TARGET}.app $${TARGET}
 
         codesign {
             # Disabled for now since it's not working correctly yet
