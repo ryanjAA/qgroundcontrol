@@ -26,6 +26,12 @@ LinuxBuild {
         INCLUDEPATH += $$GST_ROOT/Headers
         LIBS        += -F/Library/Frameworks -framework GStreamer
         QMAKE_LIBDIR += $$GST_ROOT/Versions/1.0/lib/
+        # Dev builds don't bundle GStreamer.framework — add /Library/Frameworks to the
+        # binary's runtime search path so dyld resolves @rpath/GStreamer.framework/...
+        # to the system install. Installer builds rewrite the GStreamer reference to
+        # @executable_path/... (see QGCPostLinkInstaller.pri), so this rpath becomes a
+        # harmless extra entry there.
+        QMAKE_LFLAGS += -Wl,-rpath,/Library/Frameworks
     }
 } else:iOSBuild {
     #- gstreamer framework installed by the gstreamer iOS SDK installer (default to home directory)
