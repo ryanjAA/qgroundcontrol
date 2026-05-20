@@ -351,7 +351,7 @@ ApplicationWindow {
 
                         QGCLabel {
                             id: versionLabel
-                            text: versionMouseArea.clicked ? "Build number: 2300" : QGroundControl.qgcVersion
+                            text: versionMouseArea.clicked ? "Build number: 2301" : QGroundControl.qgcVersion
                             font.pointSize: ScreenTools.smallFontPointSize
                             Layout.maximumWidth: parent.width
                             Layout.alignment: Qt.AlignHCenter
