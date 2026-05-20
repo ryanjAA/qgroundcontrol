@@ -19,25 +19,29 @@ class VehicleHygrometerFactGroup : public FactGroup
 public:
     VehicleHygrometerFactGroup(QObject* parent = nullptr);
 
-    Q_PROPERTY(Fact* hygroID            READ hygroID            CONSTANT)
-    Q_PROPERTY(Fact* hygroTemp          READ hygroTemp          CONSTANT)
-    Q_PROPERTY(Fact* hygroHumi          READ hygroHumi          CONSTANT)
+    Q_PROPERTY(Fact* externalFuseTemp   READ externalFuseTemp   CONSTANT)
+    Q_PROPERTY(Fact* humidity           READ humidity           CONSTANT)
+    Q_PROPERTY(Fact* escTemp            READ escTemp            CONSTANT)
 
-    Fact* hygroID                           () { return &_hygroIDFact; }
-    Fact* hygroTemp                         () { return &_hygroTempFact; }
-    Fact* hygroHumi                         () { return &_hygroHumiFact; }
+    Fact* externalFuseTemp                  () { return &_externalFuseTempFact; }
+    Fact* humidity                          () { return &_humidityFact; }
+    Fact* escTemp                           () { return &_escTempFact; }
 
     // Overrides from FactGroup
     virtual void handleMessage(Vehicle* vehicle, mavlink_message_t& message) override;
 
-    static const char* _hygroIDFactName;
-    static const char* _hygroTempFactName;
-    static const char* _hygroHumiFactName;
+    static const char* _externalFuseTempFactName;
+    static const char* _humidityFactName;
+    static const char* _escTempFactName;
+
+    // SHT3x I2C addresses published in HYGROMETER_SENSOR.id by firmware.
+    static constexpr uint8_t _sht3xExternalFuseAddr = 0x44;
+    static constexpr uint8_t _sht3xEscAddr          = 0x45;
 
 protected:
     void _handleHygrometerSensor        (mavlink_message_t& message);
 
-    Fact _hygroTempFact;
-    Fact _hygroHumiFact;
-    Fact _hygroIDFact;
+    Fact _externalFuseTempFact;
+    Fact _humidityFact;
+    Fact _escTempFact;
 };

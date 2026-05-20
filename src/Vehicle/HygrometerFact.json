@@ -4,8 +4,8 @@
     "QGC.MetaData.Facts":
 [
 {
-    "name":             "temperature",
-    "shortDesc": "Temperature",
+    "name":             "externalFuseTemp",
+    "shortDesc": "External Temp",
     "type":             "double",
     "decimalPlaces":    3,
     "units":            "deg"
@@ -18,10 +18,11 @@
     "units":            "%"
 },
 {
-    "name":             "hygrometerid",
-    "shortDesc": "ID",
-    "type":             "uint16",
-    "decimalPlaces":    0
+    "name":             "escTemp",
+    "shortDesc": "ESC Temp",
+    "type":             "double",
+    "decimalPlaces":    3,
+    "units":            "deg"
 }
 ]
 }

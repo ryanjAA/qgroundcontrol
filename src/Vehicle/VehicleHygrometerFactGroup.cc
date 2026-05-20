@@ -11,23 +11,23 @@
 #include "Vehicle.h"
 #include "QGCGeo.h"
 
-const char* VehicleHygrometerFactGroup::_hygroHumiFactName =      "humidity";
-const char* VehicleHygrometerFactGroup::_hygroTempFactName =    "temperature";
-const char* VehicleHygrometerFactGroup::_hygroIDFactName =    "hygrometerid";
+const char* VehicleHygrometerFactGroup::_externalFuseTempFactName = "externalFuseTemp";
+const char* VehicleHygrometerFactGroup::_humidityFactName         = "humidity";
+const char* VehicleHygrometerFactGroup::_escTempFactName          = "escTemp";
 
 VehicleHygrometerFactGroup::VehicleHygrometerFactGroup(QObject* parent)
     : FactGroup(1000, ":/json/Vehicle/HygrometerFact.json", parent)
-    , _hygroTempFact             (0, _hygroTempFactName,         FactMetaData::valueTypeDouble)
-    , _hygroHumiFact             (0, _hygroHumiFactName,         FactMetaData::valueTypeDouble)
-    , _hygroIDFact               (0, _hygroIDFactName,           FactMetaData::valueTypeUint16)
-{   
-    _addFact(&_hygroTempFact,               _hygroTempFactName);
-    _addFact(&_hygroHumiFact,               _hygroHumiFactName);
-    _addFact(&_hygroIDFact,                 _hygroIDFactName);
+    , _externalFuseTempFact      (0, _externalFuseTempFactName,  FactMetaData::valueTypeDouble)
+    , _humidityFact              (0, _humidityFactName,          FactMetaData::valueTypeDouble)
+    , _escTempFact               (0, _escTempFactName,           FactMetaData::valueTypeDouble)
+{
+    _addFact(&_externalFuseTempFact,        _externalFuseTempFactName);
+    _addFact(&_humidityFact,                _humidityFactName);
+    _addFact(&_escTempFact,                 _escTempFactName);
 
-    _hygroTempFact.setRawValue(std::numeric_limits<float>::quiet_NaN());
-    _hygroHumiFact.setRawValue(std::numeric_limits<float>::quiet_NaN());
-    _hygroIDFact.setRawValue(std::numeric_limits<unsigned int>::quiet_NaN());
+    _externalFuseTempFact.setRawValue(std::numeric_limits<float>::quiet_NaN());
+    _humidityFact.setRawValue(std::numeric_limits<float>::quiet_NaN());
+    _escTempFact.setRawValue(std::numeric_limits<float>::quiet_NaN());
 }
 
 void VehicleHygrometerFactGroup::handleMessage(Vehicle* /* vehicle */, mavlink_message_t& message)
@@ -46,7 +46,17 @@ void VehicleHygrometerFactGroup::_handleHygrometerSensor(mavlink_message_t& mess
     mavlink_hygrometer_sensor_t hygrometer;
     mavlink_msg_hygrometer_sensor_decode(&message, &hygrometer);
 
-    _hygroTempFact.setRawValue(hygrometer.temperature/100.f);
-    _hygroHumiFact.setRawValue(hygrometer.humidity);
-    _hygroIDFact.setRawValue(hygrometer.id);
+    // PX4 now publishes the SHT3x I2C address in .id; route by address, not by instance index.
+    switch (hygrometer.id) {
+    case _sht3xExternalFuseAddr:
+        _externalFuseTempFact.setRawValue(hygrometer.temperature / 100.f);
+        _humidityFact.setRawValue(hygrometer.humidity);
+        break;
+    case _sht3xEscAddr:
+        _escTempFact.setRawValue(hygrometer.temperature / 100.f);
+        break;
+    default:
+        qWarning() << "HYGROMETER_SENSOR: unexpected id 0x" << QString::number(hygrometer.id, 16);
+        break;
+    }
 }
