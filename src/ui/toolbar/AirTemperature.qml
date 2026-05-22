@@ -52,6 +52,16 @@ Item {
                 && _isNum(_activeVehicle.hygrometer.escTemp.rawValue))
                ? _activeVehicle.hygrometer.escTemp.rawValue : undefined
     }
+    function _primaryBattery() {
+        return (_activeVehicle && _activeVehicle.batteries && _activeVehicle.batteries.count > 0)
+               ? _activeVehicle.batteries.get(0) : undefined
+    }
+    // Power Module temp (INA238 DIETEMP) arrives via standard MAVLink BATTERY_STATUS.temperature.
+    function _powerModuleTempC() {
+        var battery = _primaryBattery()
+        return (battery && battery.temperature && _isNum(battery.temperature.rawValue))
+               ? battery.temperature.rawValue : undefined
+    }
     function _pitotTempC() {
         return (_activeVehicle && _activeVehicle.temperature && _activeVehicle.temperature.temperaturePressDiff
                 && _isNum(_activeVehicle.temperature.temperaturePressDiff.rawValue))
@@ -180,6 +190,20 @@ Item {
                         text: formatHumidity(_activeVehicle && _activeVehicle.hygrometer && _activeVehicle.hygrometer.humidity
                             ? _activeVehicle.hygrometer.humidity.rawValue
                             : undefined)
+                    }
+
+                    // Power Module temp: only present once a finite value has arrived.
+                    property bool _hasPowerModuleTemp: _isNum(_powerModuleTempC())
+
+                    QGCLabel {
+                        text: qsTr("Power Module:")
+                        visible: tempGrid._hasPowerModuleTemp
+                    }
+
+                    // Full precision for power module (shunt) temperature
+                    QGCLabel {
+                        text: formatTemperature(_powerModuleTempC())
+                        visible: tempGrid._hasPowerModuleTemp
                     }
 
                     QGCLabel {
