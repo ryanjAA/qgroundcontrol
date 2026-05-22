@@ -78,16 +78,17 @@ Item {
     }
 
     // Top-bar label per spec: ext/esc combined, else single ext, else single esc,
-    // else pitot, else autopilot, else "--".
+    // else pitot (OAT proxy in flight), else power module, else autopilot, else "--".
     function _iconLabelText() {
         var ext = _extTempC(), esc = _escTempC()
         if (_isNum(ext) && _isNum(esc)) {
             return Math.round(convertTemperature(ext)) + "/" + Math.round(convertTemperature(esc)) + _unitSuffix()
         }
-        if (_isNum(ext))                return formatTemperatureNoDecimal(ext)
-        if (_isNum(esc))                return formatTemperatureNoDecimal(esc)
-        if (_isNum(_pitotTempC()))      return formatTemperatureNoDecimal(_pitotTempC())
-        if (_isNum(_autopilotTempC())) return formatTemperatureNoDecimal(_autopilotTempC())
+        if (_isNum(ext))                 return formatTemperatureNoDecimal(ext)
+        if (_isNum(esc))                 return formatTemperatureNoDecimal(esc)
+        if (_isNum(_pitotTempC()))       return formatTemperatureNoDecimal(_pitotTempC())
+        if (_isNum(_powerModuleTempC())) return formatTemperatureNoDecimal(_powerModuleTempC())
+        if (_isNum(_autopilotTempC()))   return formatTemperatureNoDecimal(_autopilotTempC())
         return formatTemperatureNoDecimal(undefined)
     }
 
