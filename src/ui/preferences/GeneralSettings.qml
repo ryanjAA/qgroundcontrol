@@ -907,7 +907,7 @@ Rectangle {
                                     //AA added this for RC RSSI
                                 }
                                 FactCheckBox {
-                                    text:    qsTr("Use alternate RC RSSI")
+                                    text:    qsTr("Use Applied Link RC")
                                     fact:    QGroundControl.settingsManager.appSettings.useElrsRssiChannel
                                     visible: true
                                                                 }

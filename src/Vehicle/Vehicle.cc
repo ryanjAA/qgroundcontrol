@@ -1957,14 +1957,21 @@ void Vehicle::_handleRCChannels(mavlink_message_t& message)
     emit remoteControlRSSIChanged(channels.rssi);
     emit rcChannelsChanged(channels.chancount, pwmValues);
 
+    // AA: Expose ch16/ch15 for ELRS RSSI/LQ — but ONLY while the RC receiver is
+    // healthy. When the ELRS link drops, the FC often keeps emitting RC_CHANNELS
+    // carrying stale/failsafe channel values. The emit above already routes
+    // through _remoteControlRSSIChanged()->_setRcRSSI(0), which clears ch16/ch15
+    // to -1 on loss. Re-writing them here from the stale PWM would undo that and
+    // make the indicator flash between the stale ELRS reading and "unavailable"
+    // as RC_CHANNELS and SYS_STATUS alternate. When unhealthy, leave the
+    // sentinels cleared so the QML value-range check reports unavailable.
+    if (_rcReceiverHealthy()) {
+        _rcChannel16 = pwmValues[15];
+        emit rcChannel16Changed();
 
-    // AA: Expose ch16 for ELRS RSSI
-    _rcChannel16 = pwmValues[15];
-    emit rcChannel16Changed();
-
-    // AA: Expose ch15 for ELRS LQ
-    _rcChannel15 = pwmValues[14];
-    emit rcChannel15Changed();
+        _rcChannel15 = pwmValues[14];
+        emit rcChannel15Changed();
+    }
 
     // AA: Fresh RC_CHANNELS packet — reset the loss timeout.
     _rcLossTimer.start();
