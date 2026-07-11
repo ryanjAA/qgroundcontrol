@@ -69,8 +69,20 @@ jobs:
           ndk-version: r21e
           add-to-path: false
 
+      - name: Ensure Android SDK platform 33 is installed
+        run: |
+          yes | ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager \
+            "platforms;android-33" \
+            "build-tools;33.0.2" \
+            "platform-tools"
+
       - name: Remove Android SDKs to force usage of android-33 only
-        run: ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --list_installed | grep "platforms;android-" | grep -v "platforms;android-33 " | awk '{print $1}' | xargs -I {} ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --uninstall "{}"
+        run: |
+          ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --list_installed \
+            | grep "platforms;android-" \
+            | grep -v "platforms;android-33 " \
+            | awk '{print $1}' \
+            | xargs -r -I {} ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --uninstall {}
 
       - name: Install ccache
         run:  sudo apt-get install ccache
