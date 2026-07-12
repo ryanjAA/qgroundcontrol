@@ -32,6 +32,7 @@ Item {
     property bool   _showRCToParam:     _activeVehicle.px4Firmware
     property var    _appSettings:       QGroundControl.settingsManager.appSettings
     property var    _controller:        controller
+    property string _fileDialogMode:    "parameters"
 
     ParameterEditorController {
         id: controller
@@ -110,6 +111,15 @@ Item {
             onTriggered:    controller.pullMetadataFromVehicle()
         }
         QGCMenuItem {
+            text:           qsTr("Pull New Metadata...")
+            onTriggered: {
+                _fileDialogMode =           "metadata"
+                fileDialog.title =          qsTr("Pull New Parameter Metadata")
+                fileDialog.selectExisting = true
+                fileDialog.openForLoad()
+            }
+        }
+        QGCMenuItem {
             text:           qsTr("Reset all to firmware's defaults")
             onTriggered:    mainWindow.showMessageDialog(qsTr("Reset All"),
                                                          qsTr("Select Reset to reset all parameters to their defaults.\n\nNote that this will also completely reset everything, including UAVCAN nodes, all vehicle settings, setup and calibrations."),
@@ -128,6 +138,7 @@ Item {
         QGCMenuItem {
             text:           qsTr("Load from file...")
             onTriggered: {
+                _fileDialogMode =           "parameters"
                 fileDialog.title =          qsTr("Load Parameters")
                 fileDialog.selectExisting = true
                 fileDialog.openForLoad()
@@ -136,6 +147,7 @@ Item {
         QGCMenuItem {
             text:           qsTr("Save to file...")
             onTriggered: {
+                _fileDialogMode =           "parameters"
                 fileDialog.title =          qsTr("Save Parameters")
                 fileDialog.selectExisting = false
                 fileDialog.openForSave()
@@ -304,7 +316,9 @@ Item {
     QGCFileDialog {
         id:             fileDialog
         folder:         _appSettings.parameterSavePath
-        nameFilters:    [ qsTr("Parameter Files (*.%1)").arg(_appSettings.parameterFileExtension) , qsTr("All Files (*)") ]
+        nameFilters:    _fileDialogMode === "metadata" ?
+                            [ qsTr("Firmware or Metadata Files (*.px4 *.apj *.xml)"), qsTr("PX4 Firmware Files (*.px4 *.apj)"), qsTr("Parameter Metadata XML (*.xml)"), qsTr("All Files (*)") ] :
+                            [ qsTr("Parameter Files (*.%1)").arg(_appSettings.parameterFileExtension) , qsTr("All Files (*)") ]
 
         onAcceptedForSave: {
             controller.saveToFile(file)
@@ -313,7 +327,9 @@ Item {
 
         onAcceptedForLoad: {
             close()
-            if (controller.buildDiffFromFile(file)) {
+            if (_fileDialogMode === "metadata") {
+                controller.pullNewMetadataFromFile(file)
+            } else if (controller.buildDiffFromFile(file)) {
                 parameterDiffDialog.createObject(mainWindow).open()
             }
         }

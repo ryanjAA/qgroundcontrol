@@ -109,6 +109,7 @@ public:
     Q_INVOKABLE void sendDiff                       (void);
     Q_INVOKABLE void refresh                        (void);
     Q_INVOKABLE void pullMetadataFromVehicle        (void);
+    Q_INVOKABLE void pullNewMetadataFromFile        (const QString& filename);
     Q_INVOKABLE void resetAllToDefaults             (void);
     Q_INVOKABLE void resetAllToVehicleConfiguration (void);
 
@@ -138,6 +139,7 @@ private slots:
 
 private:
     bool _shouldShow(Fact *fact) const;
+    void _rebuildLists(void);
 
 private:
     ParameterManager*           _parameterMgr           = nullptr;

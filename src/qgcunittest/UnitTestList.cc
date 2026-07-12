@@ -89,6 +89,7 @@ UT_REGISTER_TEST(CameraCalcTest)
 UT_REGISTER_TEST(FWLandingPatternTest)
 UT_REGISTER_TEST(LandingComplexItemTest)
 
+UT_REGISTER_TEST_STANDALONE(ParameterMetadataImportTest)
 UT_REGISTER_TEST_STANDALONE(MissionCommandTreeEditorTest)
 
 // List of unit test which are currently disabled.

@@ -12,6 +12,69 @@
 #include "MultiVehicleManager.h"
 #include "QGCApplication.h"
 #include "ParameterManager.h"
+#include "CompInfoParam.h"
+#include "ComponentInformationManager.h"
+#include "FactMetaData.h"
+#include "FirmwarePlugin.h"
+#include "FirmwarePluginManager.h"
+
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QScopedPointer>
+#include <QTemporaryFile>
+
+namespace {
+QByteArray _testPX4MetaDataXml(const QString& shortDescription)
+{
+    return QStringLiteral(
+        "<parameters>"
+        "<version>3</version>"
+        "<parameter_version_major>1</parameter_version_major>"
+        "<parameter_version_minor>999</parameter_version_minor>"
+        "<group name=\"AAGS Test\">"
+        "<parameter name=\"AAGS_DUMMY\" default=\"0\" type=\"INT32\">"
+        "<short_desc>Dummy parameter</short_desc>"
+        "</parameter>"
+        "<parameter name=\"SYS_AUTOSTART\" default=\"0\" type=\"INT32\">"
+        "<short_desc>%1</short_desc>"
+        "<long_desc>%1</long_desc>"
+        "</parameter>"
+        "</group>"
+        "</parameters>").arg(shortDescription).toUtf8();
+}
+
+bool _writeTempFile(QTemporaryFile& file, const QByteArray& bytes)
+{
+    if (!file.open()) {
+        return false;
+    }
+    if (file.write(bytes) != bytes.count()) {
+        return false;
+    }
+    file.close();
+    return true;
+}
+
+bool _readTempFile(const QString& fileName, QByteArray& bytes)
+{
+    QFile file(fileName);
+    if (!file.open(QIODevice::ReadOnly)) {
+        return false;
+    }
+    bytes = file.readAll();
+    return true;
+}
+
+QByteArray _px4CompressedJsonString(const QByteArray& bytes)
+{
+    QByteArray compressed = qCompress(bytes);
+    compressed.remove(0, 4);
+    return compressed.toBase64();
+}
+}
 
 /// Test failure modes which should still lead to param load success
 void ParameterManagerTest::_noFailureWorker(MockConfiguration::FailureMode_t failureMode)
@@ -230,4 +293,65 @@ void ParameterManagerTest::_FTPChangeParam()
     arguments = spyProgress.takeLast();
     QCOMPARE(arguments.count(), 1);
     QCOMPARE(arguments.at(0).toFloat(), 0.0f);
+}
+
+void ParameterMetadataImportTest::_cachePX4MetadataFromXml(void)
+{
+    const QByteArray xmlBytes = _testPX4MetaDataXml(QStringLiteral("Imported XML metadata"));
+    QTemporaryFile xmlFile(QDir::temp().filePath(QStringLiteral("aags-metadata-XXXXXX.xml")));
+    QVERIFY(_writeTempFile(xmlFile, xmlBytes));
+
+    QString errorString;
+    QString cachedFile;
+    QVERIFY2(CompInfoParam::cachePX4MetaDataFromFile(xmlFile.fileName(), errorString, &cachedFile), qPrintable(errorString));
+    QVERIFY(QFileInfo::exists(cachedFile));
+
+    QByteArray cachedBytes;
+    QVERIFY(_readTempFile(cachedFile, cachedBytes));
+    QCOMPARE(cachedBytes, xmlBytes);
+}
+
+void ParameterMetadataImportTest::_cachePX4MetadataFromFirmware(void)
+{
+    const QByteArray xmlBytes = _testPX4MetaDataXml(QStringLiteral("Imported firmware metadata"));
+    QJsonObject firmwareJson;
+    firmwareJson[QStringLiteral("mav_autopilot")] = MAV_AUTOPILOT_PX4;
+    firmwareJson[QStringLiteral("parameter_xml_size")] = xmlBytes.count();
+    firmwareJson[QStringLiteral("parameter_xml")] = QString::fromUtf8(_px4CompressedJsonString(xmlBytes));
+
+    QTemporaryFile firmwareFile(QDir::temp().filePath(QStringLiteral("aags-firmware-XXXXXX.px4")));
+    QVERIFY(_writeTempFile(firmwareFile, QJsonDocument(firmwareJson).toJson(QJsonDocument::Compact)));
+
+    QString errorString;
+    QString cachedFile;
+    QVERIFY2(CompInfoParam::cachePX4MetaDataFromFile(firmwareFile.fileName(), errorString, &cachedFile), qPrintable(errorString));
+    QVERIFY(QFileInfo::exists(cachedFile));
+
+    QByteArray cachedBytes;
+    QVERIFY(_readTempFile(cachedFile, cachedBytes));
+    QCOMPARE(cachedBytes, xmlBytes);
+}
+
+void ParameterMetadataImportTest::_loadedPX4MetadataUsesImportedXml(void)
+{
+    const QString importedDescription = QStringLiteral("Imported metadata lookup description");
+    const QByteArray xmlBytes = _testPX4MetaDataXml(importedDescription);
+    QTemporaryFile xmlFile(QDir::temp().filePath(QStringLiteral("aags-lookup-XXXXXX.xml")));
+    QVERIFY(_writeTempFile(xmlFile, xmlBytes));
+
+    QString errorString;
+    QString cachedFile;
+    QVERIFY2(CompInfoParam::cachePX4MetaDataFromFile(xmlFile.fileName(), errorString, &cachedFile), qPrintable(errorString));
+
+    FirmwarePlugin* plugin = qgcApp()->toolbox()->firmwarePluginManager()->firmwarePluginForAutopilot(MAV_AUTOPILOT_PX4, MAV_TYPE_FIXED_WING);
+    QVERIFY(plugin);
+
+    QScopedPointer<QObject> opaqueMetaData(plugin->_loadParameterMetaData(cachedFile));
+    QVERIFY(opaqueMetaData);
+
+    FactMetaData* metaData = plugin->_getMetaDataForFact(opaqueMetaData.data(), QStringLiteral("SYS_AUTOSTART"), FactMetaData::valueTypeInt32, MAV_TYPE_FIXED_WING);
+    QVERIFY(metaData);
+
+    QCOMPARE(metaData->shortDescription(), importedDescription);
+    QCOMPARE(metaData->longDescription(), importedDescription);
 }

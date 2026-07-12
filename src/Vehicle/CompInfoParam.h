@@ -30,14 +30,19 @@ public:
     CompInfoParam(uint8_t compId, Vehicle* vehicle, QObject* parent = nullptr);
 
     FactMetaData* factMetaDataForName(const QString& name, FactMetaData::ValueType_t type);
+    void usePX4MetaDataFile(const QString& metaDataFile);
 
     // Overrides from CompInfo
     void setJson(const QString& metadataJsonFileName) override;
 
     static void _cachePX4MetaDataFile(const QString& metaDataFile);
+    static bool cachePX4MetaDataFile(const QString& metaDataFile, QString& errorString, QString* cachedMetaDataFile = nullptr);
+    static bool cachePX4MetaDataFromFile(const QString& metaDataFile, QString& errorString, QString* cachedMetaDataFile = nullptr);
 
 private:
     QObject* _getOpaqueParameterMetaData(void);
+    void _clearJsonParameterMetaData(void);
+    void _clearOpaqueParameterMetaData(void);
 
     static FirmwarePlugin*  _anyVehicleTypeFirmwarePlugin   (MAV_AUTOPILOT firmwareType);
     static QString          _parameterMetaDataFile          (Vehicle* vehicle, MAV_AUTOPILOT firmwareType, int& majorVersion, int& minorVersion);
@@ -48,6 +53,7 @@ private:
     FactMetaData::NameToMetaDataMap_t   _nameToMetaDataMap;
     QList<RegexFactMetaDataPair_t>      _indexedNameMetaDataList;
     QObject*                            _opaqueParameterMetaData    = nullptr;
+    QString                             _manualPX4MetaDataFile;
 
     static const char* _cachedMetaDataFilePrefix;
     static const char* _jsonParametersKey;

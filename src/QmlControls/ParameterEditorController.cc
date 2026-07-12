@@ -14,7 +14,9 @@
 #include "AppSettings.h"
 #include "Vehicle.h"
 #include "ComponentInformationManager.h"
+#include "CompInfoParam.h"
 
+#include <QFileInfo>
 #include <QStandardPaths>
 
 #include <memory>
@@ -118,6 +120,29 @@ void ParameterEditorController::_buildLists(void)
             }
         }
     }
+}
+
+void ParameterEditorController::_rebuildLists(void)
+{
+    for (int i = 0; i < _categories.count(); ++i) {
+        ParameterEditorCategory* category = _categories.value<ParameterEditorCategory*>(i);
+        for (int j = 0; j < category->groups.count(); ++j) {
+            category->groups.value<ParameterEditorGroup*>(j)->deleteLater();
+        }
+        category->deleteLater();
+    }
+
+    _categories.clear();
+    _mapCategoryName2Category.clear();
+    _parameters = nullptr;
+    _currentCategory = nullptr;
+    _currentGroup = nullptr;
+
+    _buildLists();
+
+    ParameterEditorCategory* category = _categories.count() ? _categories.value<ParameterEditorCategory*>(0) : nullptr;
+    setCurrentCategory(category);
+    emit parametersChanged();
 }
 
 void ParameterEditorController::_factAdded(int compId, Fact* fact)
@@ -368,6 +393,43 @@ void ParameterEditorController::pullMetadataFromVehicle(void)
 
     qgcApp()->showAppMessage(tr("Pulling parameter metadata from the vehicle, this may take a moment..."));
     compInfoManager->refreshComponentMetadata();
+}
+
+void ParameterEditorController::pullNewMetadataFromFile(const QString& filename)
+{
+    if (filename.isEmpty()) {
+        return;
+    }
+
+    if (!_vehicle->px4Firmware()) {
+        qgcApp()->showAppMessage(tr("Importing metadata from PX4 firmware/XML files is only supported for PX4 vehicles."));
+        return;
+    }
+
+    QString errorString;
+    QString cachedMetaDataFile;
+    if (!CompInfoParam::cachePX4MetaDataFromFile(filename, errorString, &cachedMetaDataFile)) {
+        qgcApp()->showAppMessage(tr("Unable to import parameter metadata: %1").arg(errorString));
+        return;
+    }
+
+    ComponentInformationManager* compInfoManager = _vehicle->compInfoManager();
+    if (!compInfoManager) {
+        qgcApp()->showAppMessage(tr("Unable to import parameter metadata: vehicle component metadata is not available."));
+        return;
+    }
+
+    CompInfoParam* compInfoParam = compInfoManager->compInfoParam(MAV_COMP_ID_AUTOPILOT1);
+    if (!compInfoParam) {
+        qgcApp()->showAppMessage(tr("Unable to import parameter metadata: autopilot parameter metadata is not available."));
+        return;
+    }
+
+    compInfoParam->usePX4MetaDataFile(cachedMetaDataFile);
+    _parameterMgr->reapplyMetadataToAllFacts();
+    _rebuildLists();
+
+    qgcApp()->showAppMessage(tr("Imported parameter metadata from %1.").arg(QFileInfo(filename).fileName()));
 }
 
 void ParameterEditorController::resetAllToDefaults(void)

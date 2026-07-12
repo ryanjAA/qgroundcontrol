@@ -33,4 +33,14 @@ private:
     void _noFailureWorker(MockConfiguration::FailureMode_t failureMode);
 };
 
+class ParameterMetadataImportTest : public UnitTest
+{
+    Q_OBJECT
+
+private slots:
+    void _cachePX4MetadataFromXml(void);
+    void _cachePX4MetadataFromFirmware(void);
+    void _loadedPX4MetadataUsesImportedXml(void);
+};
+
 #endif
